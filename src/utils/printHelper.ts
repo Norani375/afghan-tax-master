@@ -1,5 +1,5 @@
 /**
- * Shared print utility — opens a standalone print window with company header (optional logo) and footer.
+ * Shared print utility — opens a standalone print window with company header (logo on RIGHT) and footer.
  * Uses pure inline CSS so it works independently of Tailwind.
  */
 export interface PrintOptions {
@@ -24,7 +24,9 @@ export function openPrintWindow(opts: PrintOptions) {
     new Date().toLocaleDateString('fa-AF', { year: 'numeric', month: 'long', day: 'numeric' });
 
   const logoHTML = companyLogo
-    ? `<div style="margin-bottom:8pt"><img src="${companyLogo}" style="max-height:55pt;max-width:110pt;object-fit:contain" /></div>`
+    ? `<div style="flex-shrink:0;margin-left:12pt">
+         <img src="${companyLogo}" style="height:60pt;width:60pt;object-fit:contain;border-radius:8pt;border:2pt solid rgba(255,255,255,0.2)" />
+       </div>`
     : '';
 
   const html = `<!DOCTYPE html>
@@ -51,14 +53,17 @@ table{width:100%;border-collapse:collapse}
 <body style="padding:10pt">
 
 <!-- HEADER -->
-<div style="text-align:center;padding:16pt 0 14pt;margin-bottom:12pt;background:linear-gradient(135deg,#1e1b4b,#312e81,#4338ca);border-radius:10pt;color:#fff;position:relative;overflow:hidden">
+<div style="display:flex;align-items:center;justify-content:center;padding:16pt 20pt 14pt;margin-bottom:12pt;background:linear-gradient(135deg,#1e1b4b,#312e81,#4338ca);border-radius:10pt;color:#fff;position:relative;overflow:hidden">
   <div style="position:absolute;top:-30pt;right:-30pt;width:100pt;height:100pt;background:rgba(255,255,255,0.05);border-radius:50%"></div>
   <div style="position:absolute;bottom:-20pt;left:-20pt;width:80pt;height:80pt;background:rgba(255,255,255,0.03);border-radius:50%"></div>
   ${logoHTML}
-  <div style="font-size:14pt;font-weight:900;letter-spacing:0.03em">${companyName}</div>
-  <div style="width:60pt;height:2pt;background:linear-gradient(90deg,transparent,#fbbf24,transparent);margin:8pt auto"></div>
-  <div style="font-size:12pt;font-weight:700;color:#fde68a">${pageTitle}</div>
-  <div style="font-size:8.5pt;color:rgba(255,255,255,0.5);margin-top:4pt">تاریخ تهیه: ${dateStr}</div>
+  <div style="flex:1;text-align:center">
+    <div style="font-size:14pt;font-weight:900;letter-spacing:0.03em">${companyName}</div>
+    <div style="width:60pt;height:2pt;background:linear-gradient(90deg,transparent,#fbbf24,transparent);margin:8pt auto"></div>
+    <div style="font-size:12pt;font-weight:700;color:#fde68a">${pageTitle}</div>
+    <div style="font-size:8.5pt;color:rgba(255,255,255,0.5);margin-top:4pt">تاریخ تهیه: ${dateStr}</div>
+  </div>
+  ${companyLogo ? '<div style="flex-shrink:0;width:60pt"></div>' : ''}
 </div>
 
 ${content}

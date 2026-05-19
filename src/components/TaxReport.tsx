@@ -149,14 +149,19 @@ table{width:100%;border-collapse:collapse}
 <div style="text-align:center;padding:16pt 0 14pt;margin-bottom:0;background:linear-gradient(135deg,#1e1b4b,#312e81,#4338ca);border-radius:10pt;color:#fff;position:relative;overflow:hidden">
   <div style="position:absolute;top:-30pt;right:-30pt;width:100pt;height:100pt;background:rgba(255,255,255,0.05);border-radius:50%"></div>
   <div style="position:absolute;bottom:-20pt;left:-20pt;width:80pt;height:80pt;background:rgba(255,255,255,0.03);border-radius:50%"></div>
-  ${company.logo ? `<div style="margin-bottom:8pt"><img src="${company.logo}" style="max-height:55pt;max-width:110pt;object-fit:contain;border-radius:6pt" /></div>` : ''}
-  <div style="font-size:9pt;letter-spacing:0.15em;text-transform:uppercase;color:rgba(255,255,255,0.7);margin-bottom:4pt">Islamic Emirate of Afghanistan</div>
-  <div style="font-size:17pt;font-weight:900;letter-spacing:0.03em">امارت اسلامی افغانستان</div>
-  <div style="font-size:9pt;color:rgba(255,255,255,0.6);margin-top:2pt">وزارت مالیه — ریاست عمومی عواید</div>
-  <div style="width:60pt;height:2pt;background:linear-gradient(90deg,transparent,#fbbf24,transparent);margin:10pt auto"></div>
-  <div style="font-size:12pt;font-weight:700;color:#fde68a">گزارش رسمی تصفیه مالیاتی</div>
-  <div style="font-size:10pt;margin-top:4pt;font-weight:600">شرکت صرافی «${companyName}»</div>
-  <div style="font-size:8.5pt;color:rgba(255,255,255,0.5);margin-top:4pt">تاریخ تهیه: ${displayDate}</div>
+  <div style="display:flex;align-items:center;justify-content:center;width:100%">
+    ${company.logo ? `<div style="flex-shrink:0;margin-left:14pt"><img src="${company.logo}" style="height:65pt;width:65pt;object-fit:contain;border-radius:8pt;border:2pt solid rgba(255,255,255,0.2)" /></div>` : ''}
+    <div style="flex:1;text-align:center">
+      <div style="font-size:9pt;letter-spacing:0.15em;text-transform:uppercase;color:rgba(255,255,255,0.7);margin-bottom:4pt">Islamic Emirate of Afghanistan</div>
+      <div style="font-size:17pt;font-weight:900;letter-spacing:0.03em">امارت اسلامی افغانستان</div>
+      <div style="font-size:9pt;color:rgba(255,255,255,0.6);margin-top:2pt">وزارت مالیه — ریاست عمومی عواید</div>
+      <div style="width:60pt;height:2pt;background:linear-gradient(90deg,transparent,#fbbf24,transparent);margin:10pt auto"></div>
+      <div style="font-size:12pt;font-weight:700;color:#fde68a">گزارش رسمی تصفیه مالیاتی</div>
+      <div style="font-size:10pt;margin-top:4pt;font-weight:600">شرکت صرافی «${companyName}»</div>
+      <div style="font-size:8.5pt;color:rgba(255,255,255,0.5);margin-top:4pt">تاریخ تهیه: ${displayDate}</div>
+    </div>
+    ${company.logo ? '<div style="flex-shrink:0;width:65pt"></div>' : ''}
+  </div>
 </div>
 
 <!-- INTRO -->
@@ -379,19 +384,22 @@ table{width:100%;border-collapse:collapse}
           <div className="absolute bottom-0 left-0 w-32 h-32 bg-white/3 rounded-full translate-y-1/2 -translate-x-1/2" />
           <div className="absolute top-1/2 left-1/4 w-2 h-2 bg-amber-400/40 rounded-full" />
           <div className="absolute top-1/3 right-1/4 w-1.5 h-1.5 bg-amber-400/30 rounded-full" />
-          <div className="relative z-10">
+          <div className="relative z-10 flex items-center justify-center">
             {company.logo && (
-              <div className="mb-2">
-                <img src={company.logo} alt="logo" className="mx-auto max-h-14 max-w-28 object-contain rounded-lg" />
+              <div className="flex-shrink-0 ml-4">
+                <img src={company.logo} alt="logo" className="h-16 w-16 object-contain rounded-lg border-2 border-white/20" />
               </div>
             )}
-            <div className="text-[10px] tracking-[0.2em] uppercase text-white/50 mb-1">Islamic Emirate of Afghanistan</div>
-            <div className="text-xl font-black tracking-wide">امارت اسلامی افغانستان</div>
-            <div className="text-xs text-white/40 mt-1">وزارت مالیه — ریاست عمومی عواید</div>
-            <div className="w-16 h-0.5 mx-auto my-3 bg-gradient-to-r from-transparent via-amber-400 to-transparent" />
-            <div className="text-base font-bold text-amber-300">گزارش رسمی تصفیه مالیاتی</div>
-            <div className="text-sm mt-1 font-semibold text-white/90">شرکت صرافی «{companyName}»</div>
-            <div className="text-[10px] text-white/30 mt-2">تاریخ تهیه: {displayDate}</div>
+            <div className="flex-1 text-center">
+              <div className="text-[10px] tracking-[0.2em] uppercase text-white/50 mb-1">Islamic Emirate of Afghanistan</div>
+              <div className="text-xl font-black tracking-wide">امارت اسلامی افغانستان</div>
+              <div className="text-xs text-white/40 mt-1">وزارت مالیه — ریاست عمومی عواید</div>
+              <div className="w-16 h-0.5 mx-auto my-3 bg-gradient-to-r from-transparent via-amber-400 to-transparent" />
+              <div className="text-base font-bold text-amber-300">گزارش رسمی تصفیه مالیاتی</div>
+              <div className="text-sm mt-1 font-semibold text-white/90">شرکت صرافی «{companyName}»</div>
+              <div className="text-[10px] text-white/30 mt-2">تاریخ تهیه: {displayDate}</div>
+            </div>
+            {company.logo && <div className="flex-shrink-0 w-16" />}
           </div>
         </div>
 
