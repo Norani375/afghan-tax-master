@@ -1,12 +1,46 @@
-/* Afghan Tax System - Clean Styles */
-
-/* Print */
-@media print {
-  .no-print { display: none !important; }
-  body { background: white !important; }
+/* RTL support and animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
-/* Slim scrollbar */
-::-webkit-scrollbar { width: 4px; height: 4px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: oklch(0 0 0 / 0.15); border-radius: 4px; }
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* Improve stat display on small screens */
+.stat {
+  padding: 0.75rem !important;
+}
+
+.stat-title {
+  font-size: 0.7rem !important;
+}
+
+/* Ensure proper RTL for tables */
+table th,
+table td {
+  text-align: right;
+}
+
+table th:last-child,
+table td:last-child {
+  text-align: left;
+}
+
+/* Number inputs always LTR */
+input[type="number"] {
+  direction: ltr;
+  text-align: right;
+}
+
+/* Collapse styling */
+.collapse-title {
+  font-size: 0.875rem;
+}
