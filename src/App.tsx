@@ -620,7 +620,7 @@ const App: React.FC = () => {
 
         {/* Tab Content */}
         <div key={`t-${tab}`} className="animate-[fadeIn_0.3s_ease-out]">
-          {tab === 0 && <DashboardTab calc={calc} incomes={incomes} />}
+          {tab === 0 && <DashboardTab calc={calc} incomes={incomes} employees={employees} />}
           {tab === 1 && <CompanyTab company={company} onSave={saveCompany} />}
           {tab === 2 && <IncomeTab incomes={incomes} onAdd={addIncome} onDel={delIncome} calc={calc} />}
           {tab === 3 && <EmployeeTab employees={employees} onAdd={addEmployee} onDel={delEmployee} calc={calc} />}
