@@ -129,6 +129,55 @@ const BarChart: React.FC<{ data: { label: string; value: number; color: string }
   );
 };
 
+/* ── Area Chart (trend) ── */
+const AreaChart: React.FC<{ points: { label: string; value: number }[]; color?: string; height?: number }> = ({ points, color = '#3b82f6', height = 140 }) => {
+  const max = Math.max(...points.map(p => p.value), 1);
+  const W = 100, H = height, pad = 8;
+  const stepX = points.length > 1 ? (W - pad * 2) / (points.length - 1) : 0;
+  const coords = points.map((p, i) => [pad + i * stepX, H - 24 - (p.value / max) * (H - 40)] as [number, number]);
+  const line = coords.map((c, i) => (i === 0 ? `M ${c[0]} ${c[1]}` : `L ${c[0]} ${c[1]}`)).join(' ');
+  const area = `${line} L ${coords[coords.length - 1]?.[0] ?? pad} ${H - 24} L ${pad} ${H - 24} Z`;
+  return (
+    <svg width="100%" height={H} viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none">
+      <defs>
+        <linearGradient id={`grad-${color.replace('#','')}`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={color} stopOpacity="0.45" />
+          <stop offset="100%" stopColor={color} stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      <path d={area} fill={`url(#grad-${color.replace('#','')})`} />
+      <path d={line} stroke={color} strokeWidth="1.2" fill="none" />
+      {coords.map(([x, y], i) => (
+        <g key={i}>
+          <circle cx={x} cy={y} r="1.5" fill={color}><title>{points[i].label}: {fmt(points[i].value)} ؋</title></circle>
+          <text x={x} y={H - 8} textAnchor="middle" className="fill-base-content" fontSize="3.5" opacity={0.5}>{points[i].label}</text>
+        </g>
+      ))}
+    </svg>
+  );
+};
+
+/* ── Horizontal Bars (employee tax comparison) ── */
+const HBar: React.FC<{ rows: { label: string; value: number; color?: string }[] }> = ({ rows }) => {
+  const max = Math.max(...rows.map(r => r.value), 1);
+  return (
+    <div className="space-y-2">
+      {rows.length === 0 && <div className="text-xs opacity-40 text-center py-4">داده‌ای نیست</div>}
+      {rows.map((r, i) => (
+        <div key={i}>
+          <div className="flex justify-between text-xs mb-1">
+            <span className="opacity-60 truncate max-w-[60%]">{r.label}</span>
+            <span className="font-bold">{fmt(r.value)} ؋</span>
+          </div>
+          <div className="h-2 rounded-full overflow-hidden bg-base-300">
+            <div className="h-full rounded-full transition-all duration-700" style={{ width: `${(r.value / max) * 100}%`, background: r.color || 'oklch(var(--p))' }} />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+};
+
 /* ── Print helper ── */
 function printSection(elementId: string, title: string) {
   const el = document.getElementById(elementId);
