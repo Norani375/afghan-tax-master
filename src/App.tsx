@@ -129,6 +129,55 @@ const BarChart: React.FC<{ data: { label: string; value: number; color: string }
   );
 };
 
+/* ── Area Chart (trend) ── */
+const AreaChart: React.FC<{ points: { label: string; value: number }[]; color?: string; height?: number }> = ({ points, color = '#3b82f6', height = 140 }) => {
+  const max = Math.max(...points.map(p => p.value), 1);
+  const W = 100, H = height, pad = 8;
+  const stepX = points.length > 1 ? (W - pad * 2) / (points.length - 1) : 0;
+  const coords = points.map((p, i) => [pad + i * stepX, H - 24 - (p.value / max) * (H - 40)] as [number, number]);
+  const line = coords.map((c, i) => (i === 0 ? `M ${c[0]} ${c[1]}` : `L ${c[0]} ${c[1]}`)).join(' ');
+  const area = `${line} L ${coords[coords.length - 1]?.[0] ?? pad} ${H - 24} L ${pad} ${H - 24} Z`;
+  return (
+    <svg width="100%" height={H} viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none">
+      <defs>
+        <linearGradient id={`grad-${color.replace('#','')}`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={color} stopOpacity="0.45" />
+          <stop offset="100%" stopColor={color} stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      <path d={area} fill={`url(#grad-${color.replace('#','')})`} />
+      <path d={line} stroke={color} strokeWidth="1.2" fill="none" />
+      {coords.map(([x, y], i) => (
+        <g key={i}>
+          <circle cx={x} cy={y} r="1.5" fill={color}><title>{points[i].label}: {fmt(points[i].value)} ؋</title></circle>
+          <text x={x} y={H - 8} textAnchor="middle" className="fill-base-content" fontSize="3.5" opacity={0.5}>{points[i].label}</text>
+        </g>
+      ))}
+    </svg>
+  );
+};
+
+/* ── Horizontal Bars (employee tax comparison) ── */
+const HBar: React.FC<{ rows: { label: string; value: number; color?: string }[] }> = ({ rows }) => {
+  const max = Math.max(...rows.map(r => r.value), 1);
+  return (
+    <div className="space-y-2">
+      {rows.length === 0 && <div className="text-xs opacity-40 text-center py-4">داده‌ای نیست</div>}
+      {rows.map((r, i) => (
+        <div key={i}>
+          <div className="flex justify-between text-xs mb-1">
+            <span className="opacity-60 truncate max-w-[60%]">{r.label}</span>
+            <span className="font-bold">{fmt(r.value)} ؋</span>
+          </div>
+          <div className="h-2 rounded-full overflow-hidden bg-base-300">
+            <div className="h-full rounded-full transition-all duration-700" style={{ width: `${(r.value / max) * 100}%`, background: r.color || 'oklch(var(--p))' }} />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+};
+
 /* ── Print helper ── */
 function printSection(elementId: string, title: string) {
   const el = document.getElementById(elementId);
@@ -571,7 +620,7 @@ const App: React.FC = () => {
 
         {/* Tab Content */}
         <div key={`t-${tab}`} className="animate-[fadeIn_0.3s_ease-out]">
-          {tab === 0 && <DashboardTab calc={calc} incomes={incomes} />}
+          {tab === 0 && <DashboardTab calc={calc} incomes={incomes} employees={employees} />}
           {tab === 1 && <CompanyTab company={company} onSave={saveCompany} />}
           {tab === 2 && <IncomeTab incomes={incomes} onAdd={addIncome} onDel={delIncome} calc={calc} />}
           {tab === 3 && <EmployeeTab employees={employees} onAdd={addEmployee} onDel={delEmployee} calc={calc} />}
@@ -598,145 +647,202 @@ const App: React.FC = () => {
 /* ═══════════════════════════════════════
    DASHBOARD TAB — ENHANCED v6
    ═══════════════════════════════════════ */
-const DashboardTab: React.FC<{ calc: any; incomes: Income[] }> = ({ calc, incomes }) => (
-  <div className="space-y-5">
-    <div className="flex justify-between items-center">
-      <div className="flex items-center gap-2">
-        <Activity size={16} className="text-primary" />
-        <span className="font-bold">نمای کلی</span>
-      </div>
-      <PrintBtn sectionId="print-dashboard" title="داشبورد — خلاصه مالی" />
-    </div>
-    <div id="print-dashboard">
-      {/* Completion score */}
-      <div className="card bg-base-200 mb-5">
-        <div className="card-body p-4 flex-row items-center gap-4">
-          <div className="radial-progress text-primary" style={{ "--value": calc.score, "--size": "3.5rem", "--thickness": "4px" } as any}>
-            <span className="text-xs font-bold">{calc.score}٪</span>
+const DashboardTab: React.FC<{ calc: any; incomes: Income[]; employees: Employee[] }> = ({ calc, incomes, employees }) => {
+  const [qFilter, setQFilter] = useState<number | 'all'>('all');
+
+  const filteredIncomes = qFilter === 'all' ? incomes : incomes.filter(i => i.quarter === qFilter);
+  const filteredTotal = filteredIncomes.reduce((s, i) => s + i.amount, 0);
+
+  const margin = calc.totalIncome > 0 ? (calc.netIncome / calc.totalIncome) * 100 : 0;
+  const taxPressure = calc.totalIncome > 0 ? (calc.totalTax / calc.totalIncome) * 100 : 0;
+
+  const empTaxRows = employees
+    .map(e => ({ label: e.name || 'بدون نام', value: calcSalaryTax(e.salary) * 12, color: '#f59e0b' }))
+    .filter(r => r.value > 0)
+    .sort((a, b) => b.value - a.value)
+    .slice(0, 8);
+
+  return (
+    <div className="space-y-5">
+      <div className="flex justify-between items-center flex-wrap gap-2">
+        <div className="flex items-center gap-2">
+          <Activity size={16} className="text-primary" />
+          <span className="font-bold">نمای کلی</span>
+        </div>
+        <div className="flex items-center gap-2">
+          {/* Quarter filter */}
+          <div className="join">
+            <button className={`btn btn-xs join-item ${qFilter === 'all' ? 'btn-primary' : 'btn-ghost'}`} onClick={() => setQFilter('all')}>کل سال</button>
+            {[1,2,3,4].map(q => (
+              <button key={q} className={`btn btn-xs join-item ${qFilter === q ? 'btn-primary' : 'btn-ghost'}`} onClick={() => setQFilter(q)}>ربع {q}</button>
+            ))}
           </div>
-          <div>
-            <div className="font-bold text-sm">آمادگی گزارش</div>
-            <div className="text-xs opacity-40">
-              {calc.score >= 80 ? 'گزارش آماده ارسال به مستوفیت' : calc.score >= 50 ? 'بخشی از اطلاعات هنوز وارد نشده' : 'لطفاً اطلاعات پایه را تکمیل کنید'}
-            </div>
-          </div>
+          <PrintBtn sectionId="print-dashboard" title="داشبورد — خلاصه مالی" />
         </div>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
-        {[
-          { label: 'مجموع درآمد', value: calc.totalIncome, cls: 'text-success', icon: <TrendingUp size={16} />, bg: 'from-success/10 to-transparent' },
-          { label: 'هزینه‌ها', value: calc.operatingExpenses, cls: 'text-warning', icon: <Calculator size={16} />, bg: 'from-warning/10 to-transparent' },
-          { label: 'عواید خالص', value: calc.netIncome, cls: calc.netIncome >= 0 ? 'text-info' : 'text-error', icon: <BarChart3 size={16} />, bg: 'from-info/10 to-transparent' },
-          { label: 'مالیات کل', value: calc.totalTax, cls: 'text-error', icon: <DollarSign size={16} />, bg: 'from-error/10 to-transparent' },
-        ].map((s, i) => (
-          <div key={i} className="card bg-base-200 hover:shadow-md transition-shadow">
-            <div className={`card-body p-4 bg-gradient-to-b ${s.bg} rounded-2xl`}>
-              <div className="flex items-center gap-2 opacity-40 text-xs">{s.icon} {s.label}</div>
-              <AnimNum value={s.value} className={`font-black text-lg ${s.cls}`} />
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Charts Row */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-5">
-        {/* Donut — Income by Category */}
-        <div className="card bg-base-200">
-          <div className="card-body p-5">
-            <h3 className="font-bold text-sm mb-3 flex items-center gap-2"><PieChart size={14} className="text-primary" /> تفکیک درآمد</h3>
-            <div className="flex items-center justify-center gap-4">
-              <DonutChart data={calc.byCategory.map((c: any) => ({ label: c.category, value: c.amount, color: c.color }))} />
-              <div className="space-y-2">
-                {calc.byCategory.filter((c: any) => c.amount > 0).map((c: any) => (
-                  <div key={c.category} className="flex items-center gap-2 text-xs">
-                    <div className="w-3 h-3 rounded-full shrink-0" style={{ background: c.color }} />
-                    <span className="opacity-60 truncate max-w-[100px]">{c.category}</span>
-                  </div>
-                ))}
+      <div id="print-dashboard">
+        {/* Readiness + Hero KPI */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-5">
+          <div className="card bg-gradient-to-br from-primary/10 via-base-200 to-base-200 border border-primary/20">
+            <div className="card-body p-4 flex-row items-center gap-4">
+              <div className="radial-progress text-primary" style={{ "--value": calc.score, "--size": "4rem", "--thickness": "5px" } as any}>
+                <span className="text-xs font-bold">{calc.score}٪</span>
+              </div>
+              <div>
+                <div className="font-bold text-sm">آمادگی گزارش</div>
+                <div className="text-[11px] opacity-50 leading-tight mt-1">
+                  {calc.score >= 80 ? 'گزارش آماده ارسال به مستوفیت' : calc.score >= 50 ? 'بخشی از اطلاعات وارد نشده' : 'اطلاعات پایه را تکمیل کنید'}
+                </div>
               </div>
             </div>
           </div>
+          <div className="card bg-base-200">
+            <div className="card-body p-4">
+              <div className="flex items-center gap-2 opacity-50 text-xs"><TrendingUp size={14} /> حاشیه سود</div>
+              <div className={`font-black text-2xl ${margin >= 0 ? 'text-success' : 'text-error'}`}>{margin.toFixed(1)}٪</div>
+              <div className="text-[10px] opacity-40">عواید خالص ÷ درآمد</div>
+            </div>
+          </div>
+          <div className="card bg-base-200">
+            <div className="card-body p-4">
+              <div className="flex items-center gap-2 opacity-50 text-xs"><Receipt size={14} /> فشار مالیاتی</div>
+              <div className="font-black text-2xl text-warning">{taxPressure.toFixed(1)}٪</div>
+              <div className="text-[10px] opacity-40">مالیات ÷ درآمد</div>
+            </div>
+          </div>
         </div>
 
-        {/* Bar — Quarterly */}
-        <div className="card bg-base-200">
+        {/* Stats */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
+          {[
+            { label: qFilter === 'all' ? 'مجموع درآمد' : `درآمد ربع ${qFilter}`, value: qFilter === 'all' ? calc.totalIncome : filteredTotal, cls: 'text-success', icon: <TrendingUp size={16} />, bg: 'from-success/10 to-transparent' },
+            { label: 'هزینه‌ها', value: calc.operatingExpenses, cls: 'text-warning', icon: <Calculator size={16} />, bg: 'from-warning/10 to-transparent' },
+            { label: 'عواید خالص', value: calc.netIncome, cls: calc.netIncome >= 0 ? 'text-info' : 'text-error', icon: <BarChart3 size={16} />, bg: 'from-info/10 to-transparent' },
+            { label: 'مالیات کل', value: calc.totalTax, cls: 'text-error', icon: <DollarSign size={16} />, bg: 'from-error/10 to-transparent' },
+          ].map((s, i) => (
+            <div key={i} className="card bg-base-200 hover:shadow-lg hover:-translate-y-0.5 transition-all">
+              <div className={`card-body p-4 bg-gradient-to-b ${s.bg} rounded-2xl`}>
+                <div className="flex items-center gap-2 opacity-40 text-xs">{s.icon} {s.label}</div>
+                <AnimNum value={s.value} className={`font-black text-lg ${s.cls}`} />
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Trend (Area) — full width */}
+        <div className="card bg-base-200 mb-5">
           <div className="card-body p-5">
-            <h3 className="font-bold text-sm mb-3 flex items-center gap-2"><BarChart3 size={14} className="text-primary" /> درآمد ربع‌وار</h3>
+            <div className="flex justify-between items-center mb-3">
+              <h3 className="font-bold text-sm flex items-center gap-2"><Activity size={14} className="text-primary" /> روند درآمد فصلی</h3>
+              <span className="text-[11px] opacity-40">سال جاری</span>
+            </div>
+            <AreaChart points={calc.byQuarter.map((q: any) => ({ label: `ربع ${q.quarter}`, value: q.income }))} color="#3b82f6" />
+          </div>
+        </div>
+
+        {/* Charts Row */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-5">
+          <div className="card bg-base-200">
+            <div className="card-body p-5">
+              <h3 className="font-bold text-sm mb-3 flex items-center gap-2"><PieChart size={14} className="text-primary" /> تفکیک درآمد</h3>
+              <div className="flex items-center justify-center gap-4">
+                <DonutChart data={calc.byCategory.map((c: any) => ({ label: c.category, value: c.amount, color: c.color }))} />
+                <div className="space-y-2">
+                  {calc.byCategory.filter((c: any) => c.amount > 0).map((c: any) => (
+                    <div key={c.category} className="flex items-center gap-2 text-xs">
+                      <div className="w-3 h-3 rounded-full shrink-0" style={{ background: c.color }} />
+                      <span className="opacity-60 truncate max-w-[100px]">{c.category}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="card bg-base-200">
+            <div className="card-body p-5">
+              <h3 className="font-bold text-sm mb-3 flex items-center gap-2"><Users size={14} className="text-primary" /> بیشترین مالیات معاش</h3>
+              <HBar rows={empTaxRows} />
+            </div>
+          </div>
+        </div>
+
+        {/* Quarterly numbers grid */}
+        <div className="card bg-base-200 mb-5">
+          <div className="card-body p-5">
+            <h3 className="font-bold text-sm mb-3 flex items-center gap-2"><BarChart3 size={14} className="text-primary" /> جزئیات ربع‌وار</h3>
             <BarChart data={calc.byQuarter.map((q: any) => ({ label: `ربع ${q.quarter}`, value: q.income, color: CAT_COLORS[q.quarter - 1] }))} />
             <div className="grid grid-cols-4 gap-2 mt-3">
               {calc.byQuarter.map((q: any) => (
-                <div key={q.quarter} className="text-center">
+                <div key={q.quarter} className="text-center p-2 rounded-lg bg-base-300/40">
+                  <div className="text-[10px] opacity-40">ربع {q.quarter}</div>
                   <div className="text-xs font-bold">{fmt(q.income)}</div>
-                  <div className="text-[10px] opacity-30">مالیات: {fmt(q.tax)}</div>
+                  <div className="text-[10px] opacity-50">مالیات: {fmt(q.tax)}</div>
                 </div>
               ))}
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Tax Breakdown */}
-      <div className="card bg-base-200 mb-5">
-        <div className="card-body p-5">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="font-bold flex items-center gap-2"><Receipt size={14} className="text-primary" /> تفکیک مالیات</h3>
-            <span className="badge badge-sm badge-outline">نرخ مؤثر: {fmtPct(calc.effectiveRate)}</span>
-          </div>
-          <div className="space-y-4">
-            {[
-              { label: 'انتفاعی ربع‌وار', rate: '۴٪', value: calc.quarterlyTaxTotal, cls: 'progress-primary', color: '#3b82f6' },
-              { label: 'عواید خالص سالانه', rate: '۲۰٪', value: calc.annualTax, cls: 'progress-secondary', color: '#8b5cf6' },
-              { label: 'معاش کارمندان', rate: 'تصاعدی', value: calc.totalSalaryTax, cls: 'progress-accent', color: '#f59e0b' },
-            ].map((t, i) => {
-              const pct = calc.totalTax > 0 ? (t.value / calc.totalTax) * 100 : 0;
-              return (
-                <div key={i}>
-                  <div className="flex justify-between text-sm mb-1">
-                    <span className="opacity-60">{t.label} <span className="opacity-40">({t.rate})</span></span>
-                    <span className="font-bold">{fmt(t.value)} ؋</span>
+        {/* Tax Breakdown */}
+        <div className="card bg-base-200 mb-5">
+          <div className="card-body p-5">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="font-bold flex items-center gap-2"><Receipt size={14} className="text-primary" /> تفکیک مالیات</h3>
+              <span className="badge badge-sm badge-outline">نرخ مؤثر: {fmtPct(calc.effectiveRate)}</span>
+            </div>
+            <div className="space-y-4">
+              {[
+                { label: 'انتفاعی ربع‌وار', rate: '۴٪', value: calc.quarterlyTaxTotal, cls: 'progress-primary' },
+                { label: 'عواید خالص سالانه', rate: '۲۰٪', value: calc.annualTax, cls: 'progress-secondary' },
+                { label: 'معاش کارمندان', rate: 'تصاعدی', value: calc.totalSalaryTax, cls: 'progress-accent' },
+              ].map((t, i) => {
+                const pct = calc.totalTax > 0 ? (t.value / calc.totalTax) * 100 : 0;
+                return (
+                  <div key={i}>
+                    <div className="flex justify-between text-sm mb-1">
+                      <span className="opacity-60">{t.label} <span className="opacity-40">({t.rate})</span></span>
+                      <span className="font-bold">{fmt(t.value)} ؋</span>
+                    </div>
+                    <progress className={`progress ${t.cls} w-full h-2.5`} value={pct} max={100} />
                   </div>
-                  <progress className={`progress ${t.cls} w-full h-2.5`} value={pct} max={100} />
-                </div>
-              );
-            })}
-            <div className="divider my-1" />
-            <div className="flex justify-between items-center">
-              <span className="font-bold">مجموع قابل پرداخت</span>
-              <AnimNum value={calc.totalTax} className="font-black text-xl text-error" />
+                );
+              })}
+              <div className="divider my-1" />
+              <div className="flex justify-between items-center">
+                <span className="font-bold">مجموع قابل پرداخت</span>
+                <AnimNum value={calc.totalTax} className="font-black text-xl text-error" />
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
 
-    {/* Warnings */}
-    {calc.warnings.length > 0 && (
-      <div className="alert alert-warning shadow-sm">
-        <div>
-          <AlertTriangle size={16} />
-          <div>
-            <h4 className="font-bold text-sm">هشدارها ({calc.warnings.length})</h4>
-            <ul className="text-xs mt-1 space-y-1">
-              {calc.warnings.map((w: string, i: number) => <li key={i} className="flex items-center gap-1"><ChevronRight size={10} /> {w}</li>)}
+      {/* Warnings */}
+      {calc.warnings.length > 0 && (
+        <div className="card bg-warning/10 border border-warning/30">
+          <div className="card-body p-4">
+            <h4 className="font-bold text-sm flex items-center gap-2 text-warning"><AlertTriangle size={14} /> هشدارها ({calc.warnings.length})</h4>
+            <ul className="text-xs mt-1 grid sm:grid-cols-2 gap-1">
+              {calc.warnings.map((w: string, i: number) => <li key={i} className="flex items-center gap-1 opacity-80"><ChevronRight size={10} /> {w}</li>)}
             </ul>
           </div>
         </div>
-      </div>
-    )}
+      )}
 
-    {calc.validations.length > 0 && (
-      <div className="flex flex-wrap gap-2">
-        {calc.validations.map((v: string, i: number) => (
-          <div key={i} className="badge badge-success badge-outline gap-1 py-3">
-            <CheckCircle size={10} /> {v}
-          </div>
-        ))}
-      </div>
-    )}
-  </div>
-);
+      {calc.validations.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {calc.validations.map((v: string, i: number) => (
+            <div key={i} className="badge badge-success badge-outline gap-1 py-3">
+              <CheckCircle size={10} /> {v}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
 
 /* ═══════════════════════════════════════
    COMPANY TAB
