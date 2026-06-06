@@ -590,7 +590,7 @@ const App: React.FC = () => {
                 className={`tab gap-2 whitespace-nowrap transition-all ${tab === i ? 'tab-active font-bold text-primary' : 'opacity-60 hover:opacity-100'}`}
                 onClick={() => setTab(i)}>
                 {t.icon} {t.label}
-                {i === 6 && logs.length > 0 && <span className="badge badge-xs badge-primary">{logs.length}</span>}
+                {i === 7 && logs.length > 0 && <span className="badge badge-xs badge-primary">{logs.length}</span>}
               </button>
             ))}
           </div>
