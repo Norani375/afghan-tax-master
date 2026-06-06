@@ -518,6 +518,7 @@ const App: React.FC = () => {
     { icon: <Users size={16} />, label: 'کارمندان' },
     { icon: <Calculator size={16} />, label: 'کسورات' },
     { icon: <FileText size={16} />, label: 'گزارش' },
+    { icon: <PieChart size={16} />, label: 'گزارش ربع‌وار' },
     { icon: <ScrollText size={16} />, label: 'لاگ' },
   ];
 
@@ -589,7 +590,7 @@ const App: React.FC = () => {
                 className={`tab gap-2 whitespace-nowrap transition-all ${tab === i ? 'tab-active font-bold text-primary' : 'opacity-60 hover:opacity-100'}`}
                 onClick={() => setTab(i)}>
                 {t.icon} {t.label}
-                {i === 6 && logs.length > 0 && <span className="badge badge-xs badge-primary">{logs.length}</span>}
+                {i === 7 && logs.length > 0 && <span className="badge badge-xs badge-primary">{logs.length}</span>}
               </button>
             ))}
           </div>
@@ -604,7 +605,7 @@ const App: React.FC = () => {
                   className={`btn btn-ghost btn-sm justify-start gap-3 ${tab === i ? 'btn-active text-primary font-bold' : ''}`}
                   onClick={() => { setTab(i); setMobileMenu(false); }}>
                   {t.icon} {t.label}
-                  {i === 6 && logs.length > 0 && <span className="badge badge-xs badge-primary mr-auto">{logs.length}</span>}
+                  {i === 7 && logs.length > 0 && <span className="badge badge-xs badge-primary mr-auto">{logs.length}</span>}
                 </button>
               ))}
             </div>
@@ -626,7 +627,8 @@ const App: React.FC = () => {
           {tab === 3 && <EmployeeTab employees={employees} onAdd={addEmployee} onDel={delEmployee} calc={calc} />}
           {tab === 4 && <DeductionTab deductions={deductions} onAdd={addDeduction} onDel={delDeduction} calc={calc} />}
           {tab === 5 && <ReportTab company={company} calc={calc} employees={employees} incomes={incomes} deductions={deductions} />}
-          {tab === 6 && <LogTab logs={logs} onClear={() => { setLogs([]); window.tasklet.sqlExec(`DELETE FROM tax_logs`); }} />}
+          {tab === 6 && <QuarterlyReportTab company={company} incomes={incomes} deductions={deductions} employees={employees} />}
+          {tab === 7 && <LogTab logs={logs} onClear={() => { setLogs([]); window.tasklet.sqlExec(`DELETE FROM tax_logs`); }} />}
         </div>
 
         {/* Footer */}
@@ -1452,6 +1454,254 @@ const ReportTab: React.FC<{
       <button className="btn btn-primary w-full shadow-lg shadow-primary/20" onClick={() => setShowPrint(true)}>
         <Printer size={16} /> مشاهده و چاپ گزارش رسمی
       </button>
+    </div>
+  );
+};
+
+/* ═══════════════════════════════════════
+   QUARTERLY REPORT TAB
+   ═══════════════════════════════════════ */
+const QuarterlyReportTab: React.FC<{
+  company: Company; incomes: Income[]; deductions: Deduction[]; employees: Employee[];
+}> = ({ company, incomes, deductions, employees }) => {
+  const [qFilter, setQFilter] = useState<'all' | 1 | 2 | 3 | 4>('all');
+  const [branchFilter, setBranchFilter] = useState('');
+  const [search, setSearch] = useState('');
+
+  const monthlySalaryTax = useMemo(
+    () => employees.reduce((s, e) => s + calcSalaryTax(e.salary), 0),
+    [employees]
+  );
+
+  const filteredIncomes = useMemo(() => {
+    const s = search.trim().toLowerCase();
+    const b = branchFilter.trim().toLowerCase();
+    return incomes.filter(i =>
+      (qFilter === 'all' || i.quarter === qFilter) &&
+      (!s || i.description.toLowerCase().includes(s) || i.category.toLowerCase().includes(s)) &&
+      (!b || i.description.toLowerCase().includes(b))
+    );
+  }, [incomes, qFilter, branchFilter, search]);
+
+  const rows = useMemo(() => {
+    const quarters = qFilter === 'all' ? [1, 2, 3, 4] : [qFilter as number];
+    const totalDed = deductions.reduce((s, d) => s + d.amount, 0);
+    return quarters.map(q => {
+      const qIncomes = filteredIncomes.filter(i => i.quarter === q);
+      const income = qIncomes.reduce((s, i) => s + i.amount, 0);
+      // distribute deductions & salary equally per quarter (4)
+      const ded = totalDed / 4;
+      const salTax = monthlySalaryTax * 3; // 3 months per quarter
+      const net = income - ded;
+      const profitTax = Math.max(0, net) * 0.04;
+      const totalTax = profitTax + salTax;
+      return { quarter: q, income, ded, net, profitTax, salTax, totalTax, count: qIncomes.length };
+    });
+  }, [filteredIncomes, deductions, monthlySalaryTax, qFilter]);
+
+  const totals = rows.reduce(
+    (a, r) => ({
+      income: a.income + r.income, ded: a.ded + r.ded, net: a.net + r.net,
+      profitTax: a.profitTax + r.profitTax, salTax: a.salTax + r.salTax, totalTax: a.totalTax + r.totalTax,
+    }),
+    { income: 0, ded: 0, net: 0, profitTax: 0, salTax: 0, totalTax: 0 }
+  );
+
+  const reportTitle = `گزارش ربع‌وار مالیات و سود خالص — ${company.name || 'شرکت'}`;
+  const filterLabel = qFilter === 'all' ? 'تمام ربع‌ها' : `ربع ${qFilter}`;
+
+  const exportExcel = () => {
+    const header = ['ربع', 'تعداد رکورد', 'درآمد (؋)', 'کسورات (؋)', 'سود خالص (؋)', 'مالیات ۴٪ (؋)', 'مالیات معاش (؋)', 'مجموع مالیات (؋)'];
+    const lines = [
+      [reportTitle], [`فیلتر: ${filterLabel}`, branchFilter ? `شعبه: ${branchFilter}` : '', search ? `جستجو: ${search}` : ''].filter(Boolean) as string[],
+      [`تاریخ تولید: ${nowStr()}`], [],
+      header,
+      ...rows.map(r => [`ربع ${r.quarter}`, r.count, Math.round(r.income), Math.round(r.ded), Math.round(r.net), Math.round(r.profitTax), Math.round(r.salTax), Math.round(r.totalTax)]),
+      ['مجموع', filteredIncomes.length, Math.round(totals.income), Math.round(totals.ded), Math.round(totals.net), Math.round(totals.profitTax), Math.round(totals.salTax), Math.round(totals.totalTax)],
+    ];
+    const csv = lines.map(row => row.map(c => {
+      const v = String(c ?? '');
+      return /[",\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v;
+    }).join(',')).join('\n');
+    // BOM for Excel UTF-8 + RTL
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `quarterly-report-${qFilter}-${today()}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const exportPDF = () => {
+    const w = window.open('', '_blank', 'width=900,height=700');
+    if (!w) return;
+    const tableRows = rows.map(r => `
+      <tr>
+        <td>ربع ${r.quarter}</td><td>${r.count}</td>
+        <td>${fmt(r.income)}</td><td>${fmt(r.ded)}</td>
+        <td>${fmt(r.net)}</td><td>${fmt(r.profitTax)}</td>
+        <td>${fmt(r.salTax)}</td><td><b>${fmt(r.totalTax)}</b></td>
+      </tr>`).join('');
+    w.document.write(`<!doctype html><html dir="rtl" lang="fa"><head><meta charset="utf-8"><title>${reportTitle}</title>
+      <style>
+        body{font-family:Tahoma,Vazirmatn,sans-serif;padding:24px;color:#111}
+        h1{margin:0 0 4px;font-size:18px}
+        .meta{font-size:11px;color:#666;margin-bottom:14px}
+        table{width:100%;border-collapse:collapse;font-size:12px}
+        th,td{border:1px solid #999;padding:6px 8px;text-align:right}
+        thead{background:#f0f0f0}
+        tfoot td{background:#fafafa;font-weight:bold}
+        .sig{display:flex;justify-content:space-between;margin-top:60px;font-size:11px;color:#555}
+        .sig div{width:30%;border-top:1px solid #999;padding-top:6px;text-align:center}
+      </style></head><body>
+      <h1>${reportTitle}</h1>
+      <div class="meta">
+        دوره: ${company.fiscalStart || ''} الی ${company.fiscalEnd || ''} •
+        فیلتر: ${filterLabel} ${branchFilter ? ' • شعبه: ' + branchFilter : ''} ${search ? ' • جستجو: ' + search : ''} •
+        تاریخ تولید: ${nowStr()}
+      </div>
+      <table>
+        <thead><tr>
+          <th>ربع</th><th>تعداد</th><th>درآمد (؋)</th><th>کسورات (؋)</th>
+          <th>سود خالص (؋)</th><th>مالیات ۴٪</th><th>مالیات معاش</th><th>مجموع مالیات</th>
+        </tr></thead>
+        <tbody>${tableRows}</tbody>
+        <tfoot><tr>
+          <td>مجموع</td><td>${filteredIncomes.length}</td>
+          <td>${fmt(totals.income)}</td><td>${fmt(totals.ded)}</td>
+          <td>${fmt(totals.net)}</td><td>${fmt(totals.profitTax)}</td>
+          <td>${fmt(totals.salTax)}</td><td>${fmt(totals.totalTax)}</td>
+        </tr></tfoot>
+      </table>
+      <div class="sig"><div>تهیه‌کننده<br/>${company.manager || ''}</div><div>مهر شرکت<br/>${company.name || ''}</div><div>تأیید مستوفیت</div></div>
+      <script>window.onload=()=>{window.print();}</script>
+      </body></html>`);
+    w.document.close();
+  };
+
+  return (
+    <div className="space-y-5">
+      <div className="flex items-center gap-3 mb-2">
+        <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-primary/20 to-info/10 flex items-center justify-center text-primary"><PieChart size={20} /></div>
+        <div>
+          <h2 className="font-bold">گزارش ربع‌وار مالیات و سود خالص</h2>
+          <p className="text-xs opacity-40">فیلتر بر اساس ربع، شرکت و شعبه + خروجی PDF و Excel</p>
+        </div>
+      </div>
+
+      {/* Filters */}
+      <div className="card bg-base-200">
+        <div className="card-body p-4 gap-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xs opacity-50 flex items-center gap-1"><Filter size={12} /> ربع:</span>
+            {(['all', 1, 2, 3, 4] as const).map(q => (
+              <button key={String(q)}
+                className={`btn btn-xs ${qFilter === q ? 'btn-primary' : 'btn-ghost'}`}
+                onClick={() => setQFilter(q)}>
+                {q === 'all' ? 'همه' : `ربع ${q}`}
+              </button>
+            ))}
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            <label className="input input-sm input-bordered flex items-center gap-2">
+              <Building2 size={12} className="opacity-50" />
+              <input className="grow" disabled value={company.name || 'شرکت تعیین نشده'} />
+            </label>
+            <label className="input input-sm input-bordered flex items-center gap-2">
+              <Landmark size={12} className="opacity-50" />
+              <input className="grow" placeholder="فیلتر شعبه (در شرح)" value={branchFilter} onChange={e => setBranchFilter(e.target.value)} />
+            </label>
+            <label className="input input-sm input-bordered flex items-center gap-2">
+              <Search size={12} className="opacity-50" />
+              <input className="grow" placeholder="جستجو در شرح/دسته" value={search} onChange={e => setSearch(e.target.value)} />
+            </label>
+          </div>
+          <div className="flex flex-wrap gap-2 pt-1">
+            <button className="btn btn-sm btn-primary gap-1" onClick={exportPDF}><Printer size={14} /> خروجی PDF</button>
+            <button className="btn btn-sm btn-success gap-1" onClick={exportExcel}><Download size={14} /> خروجی Excel</button>
+            <button className="btn btn-sm btn-ghost gap-1 mr-auto" onClick={() => { setQFilter('all'); setBranchFilter(''); setSearch(''); }}>
+              <RefreshCw size={14} /> پاک‌سازی
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Summary cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+        {[
+          { l: 'درآمد', v: totals.income, c: 'text-success' },
+          { l: 'سود خالص', v: totals.net, c: totals.net >= 0 ? 'text-info' : 'text-error' },
+          { l: 'مالیات انتفاعی ۴٪', v: totals.profitTax, c: 'text-warning' },
+          { l: 'مجموع مالیات', v: totals.totalTax, c: 'text-error' },
+        ].map((k, i) => (
+          <div key={i} className="card bg-base-200"><div className="card-body p-3">
+            <div className="text-xs opacity-40">{k.l}</div>
+            <div className={`font-black text-lg ${k.c}`}>{fmt(k.v)} ؋</div>
+          </div></div>
+        ))}
+      </div>
+
+      {/* Quarter table */}
+      <div className="card bg-base-100 border border-base-300">
+        <div className="card-body p-3 overflow-x-auto">
+          <table className="table table-sm">
+            <thead>
+              <tr>
+                <th>ربع</th><th>تعداد</th><th>درآمد</th><th>کسورات</th>
+                <th>سود خالص</th><th>مالیات ۴٪</th><th>مالیات معاش</th><th>مجموع مالیات</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map(r => (
+                <tr key={r.quarter}>
+                  <td className="font-bold">ربع {r.quarter}</td>
+                  <td>{r.count}</td>
+                  <td>{fmt(r.income)}</td>
+                  <td>{fmt(r.ded)}</td>
+                  <td className={r.net >= 0 ? 'text-info' : 'text-error'}>{fmt(r.net)}</td>
+                  <td>{fmt(r.profitTax)}</td>
+                  <td>{fmt(r.salTax)}</td>
+                  <td className="font-bold text-error">{fmt(r.totalTax)}</td>
+                </tr>
+              ))}
+              {rows.length === 0 && (
+                <tr><td colSpan={8} className="text-center opacity-40 py-6">رکوردی برای فیلتر انتخاب‌شده نیست</td></tr>
+              )}
+            </tbody>
+            <tfoot>
+              <tr className="font-bold bg-base-200">
+                <td>مجموع</td>
+                <td>{filteredIncomes.length}</td>
+                <td>{fmt(totals.income)}</td>
+                <td>{fmt(totals.ded)}</td>
+                <td>{fmt(totals.net)}</td>
+                <td>{fmt(totals.profitTax)}</td>
+                <td>{fmt(totals.salTax)}</td>
+                <td className="text-error">{fmt(totals.totalTax)}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+
+      {/* Income details for selected quarter */}
+      {qFilter !== 'all' && (
+        <div className="card bg-base-100 border border-base-300">
+          <div className="card-body p-3 overflow-x-auto">
+            <div className="text-xs opacity-60 mb-2">جزئیات درآمدها — ربع {qFilter} ({filteredIncomes.length} رکورد)</div>
+            <table className="table table-xs">
+              <thead><tr><th>#</th><th>تاریخ</th><th>دسته</th><th>شرح</th><th>مبلغ</th></tr></thead>
+              <tbody>
+                {filteredIncomes.map((i, idx) => (
+                  <tr key={i.id}><td>{idx + 1}</td><td>{i.date}</td><td>{i.category}</td><td>{i.description}</td><td className="font-medium">{fmt(i.amount)} ؋</td></tr>
+                ))}
+                {filteredIncomes.length === 0 && <tr><td colSpan={5} className="text-center opacity-30 py-4">بدون رکورد</td></tr>}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
