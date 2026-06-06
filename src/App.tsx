@@ -627,7 +627,8 @@ const App: React.FC = () => {
           {tab === 3 && <EmployeeTab employees={employees} onAdd={addEmployee} onDel={delEmployee} calc={calc} />}
           {tab === 4 && <DeductionTab deductions={deductions} onAdd={addDeduction} onDel={delDeduction} calc={calc} />}
           {tab === 5 && <ReportTab company={company} calc={calc} employees={employees} incomes={incomes} deductions={deductions} />}
-          {tab === 6 && <LogTab logs={logs} onClear={() => { setLogs([]); window.tasklet.sqlExec(`DELETE FROM tax_logs`); }} />}
+          {tab === 6 && <QuarterlyReportTab company={company} incomes={incomes} deductions={deductions} employees={employees} />}
+          {tab === 7 && <LogTab logs={logs} onClear={() => { setLogs([]); window.tasklet.sqlExec(`DELETE FROM tax_logs`); }} />}
         </div>
 
         {/* Footer */}
