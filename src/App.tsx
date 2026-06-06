@@ -518,6 +518,7 @@ const App: React.FC = () => {
     { icon: <Users size={16} />, label: 'کارمندان' },
     { icon: <Calculator size={16} />, label: 'کسورات' },
     { icon: <FileText size={16} />, label: 'گزارش' },
+    { icon: <PieChart size={16} />, label: 'گزارش ربع‌وار' },
     { icon: <ScrollText size={16} />, label: 'لاگ' },
   ];
 
