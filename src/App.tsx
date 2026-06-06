@@ -605,7 +605,7 @@ const App: React.FC = () => {
                   className={`btn btn-ghost btn-sm justify-start gap-3 ${tab === i ? 'btn-active text-primary font-bold' : ''}`}
                   onClick={() => { setTab(i); setMobileMenu(false); }}>
                   {t.icon} {t.label}
-                  {i === 6 && logs.length > 0 && <span className="badge badge-xs badge-primary mr-auto">{logs.length}</span>}
+                  {i === 7 && logs.length > 0 && <span className="badge badge-xs badge-primary mr-auto">{logs.length}</span>}
                 </button>
               ))}
             </div>
