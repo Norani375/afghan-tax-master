@@ -264,58 +264,66 @@ const LoginScreen: React.FC<{ onLogin: (u: User) => void }> = ({ onLogin }) => {
   };
 
   return (
-    <div dir="rtl" className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden" style={{ background: 'linear-gradient(135deg, oklch(var(--b1)) 0%, oklch(var(--b2)) 50%, oklch(var(--b1)) 100%)' }}>
-      {/* Decorative circles */}
-      <div className="absolute -top-32 -right-32 w-96 h-96 rounded-full opacity-5" style={{ background: 'oklch(var(--p))' }} />
-      <div className="absolute -bottom-24 -left-24 w-72 h-72 rounded-full opacity-5" style={{ background: 'oklch(var(--s))' }} />
-      <div className="absolute top-1/4 left-1/3 w-48 h-48 rounded-full opacity-[0.03]" style={{ background: 'oklch(var(--a))' }} />
+    <div dir="rtl" className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden bg-gradient-to-br from-base-100 via-base-200 to-base-100">
+      {/* Ambient blobs — navy + gold */}
+      <div className="absolute -top-32 -right-32 w-[28rem] h-[28rem] rounded-full blur-3xl opacity-20 bg-primary" />
+      <div className="absolute -bottom-28 -left-28 w-[22rem] h-[22rem] rounded-full blur-3xl opacity-20 bg-secondary" />
+      <div className="absolute top-1/3 left-1/4 w-56 h-56 rounded-full blur-2xl opacity-10 bg-accent" />
+      {/* Subtle grid pattern */}
+      <div className="absolute inset-0 opacity-[0.025] pointer-events-none"
+        style={{ backgroundImage: 'linear-gradient(currentColor 1px, transparent 1px), linear-gradient(90deg, currentColor 1px, transparent 1px)', backgroundSize: '32px 32px' }} />
 
       <div className="w-full max-w-sm relative z-10">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center mx-auto mb-5 shadow-xl shadow-primary/20 transition-transform hover:scale-105">
-            <Landmark size={36} className="text-primary-content" />
+          <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-primary via-primary to-secondary flex items-center justify-center mx-auto mb-5 shadow-2xl shadow-primary/30 ring-1 ring-secondary/30 transition-transform hover:scale-105">
+            <Landmark size={36} className="text-secondary drop-shadow" />
           </div>
-          <h1 className="text-2xl font-black mb-1 bg-gradient-to-l from-primary to-secondary bg-clip-text text-transparent">
+          <h1 className="text-2xl font-black mb-1 bg-gradient-to-l from-primary via-accent to-secondary bg-clip-text text-transparent">
             سیستم مالیاتی صرافی
           </h1>
-          <p className="text-sm opacity-40">نسخه ۶.۰ — حرفه‌ای</p>
+          <p className="text-xs opacity-50 tracking-wide">نسخهٔ ۶٫۰ — حرفه‌ای</p>
         </div>
 
-        <div className="card bg-base-200/80 backdrop-blur-xl shadow-2xl border border-base-300/50">
+        <div className="card bg-base-100/70 backdrop-blur-2xl shadow-2xl border border-base-300/60 ring-1 ring-secondary/10">
           <div className="card-body gap-5 p-7">
             <div>
-              <label className="label"><span className="label-text text-xs font-medium">نام کاربری</span></label>
-              <label className="input input-bordered flex items-center gap-2 transition-all focus-within:ring-2 focus-within:ring-primary/30">
-                <Users className="h-[1em] opacity-40" />
-                <input className="grow" placeholder="admin" value={username}
+              <label className="label pb-1"><span className="label-text text-xs font-semibold opacity-70">نام کاربری</span></label>
+              <label className="input input-bordered flex items-center gap-2 bg-base-200/50 border-base-300/70 transition-all focus-within:ring-2 focus-within:ring-secondary/50 focus-within:border-secondary/60">
+                <Users className="h-[1em] opacity-50 text-secondary" />
+                <input className="grow bg-transparent" placeholder="admin" value={username}
                   onChange={e => { setUsername(e.target.value); setError(''); }}
                   onKeyDown={e => e.key === 'Enter' && handleLogin()} autoFocus />
               </label>
             </div>
 
             <div>
-              <label className="label"><span className="label-text text-xs font-medium">رمز عبور</span></label>
-              <label className="input input-bordered flex items-center gap-2 transition-all focus-within:ring-2 focus-within:ring-primary/30">
-                <Lock className="h-[1em] opacity-40" />
-                <input className="grow" placeholder="••••••••" type={showPass ? 'text' : 'password'}
+              <label className="label pb-1"><span className="label-text text-xs font-semibold opacity-70">رمز عبور</span></label>
+              <label className="input input-bordered flex items-center gap-2 bg-base-200/50 border-base-300/70 transition-all focus-within:ring-2 focus-within:ring-secondary/50 focus-within:border-secondary/60">
+                <Lock className="h-[1em] opacity-50 text-secondary" />
+                <input className="grow bg-transparent" placeholder="••••••••" type={showPass ? 'text' : 'password'}
                   value={password} onChange={e => { setPassword(e.target.value); setError(''); }}
                   onKeyDown={e => e.key === 'Enter' && handleLogin()} />
-                <button type="button" className="btn btn-ghost btn-xs btn-circle opacity-40 hover:opacity-100" onClick={() => setShowPass(!showPass)}>
+                <button type="button" className="btn btn-ghost btn-xs btn-circle opacity-50 hover:opacity-100 hover:text-secondary" onClick={() => setShowPass(!showPass)}>
                   {showPass ? <EyeOff size={14} /> : <Eye size={14} />}
                 </button>
               </label>
             </div>
 
             {error && (
-              <div className="alert alert-error py-2 shadow-sm">
-                <AlertTriangle size={14} /> <span className="text-sm">{error}</span>
+              <div className="alert alert-error py-2 shadow-sm text-sm">
+                <AlertTriangle size={14} /> <span>{error}</span>
               </div>
             )}
 
-            <button className={`btn btn-primary w-full shadow-lg shadow-primary/25 ${loading ? 'btn-disabled' : ''}`} onClick={handleLogin}>
+            <button
+              className={`btn w-full border-0 text-primary-content shadow-lg shadow-primary/30 bg-gradient-to-l from-primary via-primary to-primary/90 hover:from-primary hover:to-secondary hover:text-secondary-content hover:shadow-secondary/40 transition-all duration-300 ${loading ? 'btn-disabled' : ''}`}
+              onClick={handleLogin}>
               {loading ? <span className="loading loading-spinner loading-sm" /> : <><Shield size={16} /> ورود به سیستم</>}
             </button>
+
+            <div className="divider text-[10px] opacity-40 my-0">حساب پیش‌فرض</div>
+            <div className="text-[11px] text-center opacity-60" dir="ltr">admin / admin</div>
           </div>
         </div>
 
