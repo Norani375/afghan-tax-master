@@ -749,14 +749,20 @@ const RemitSection: React.FC<{
 /* ════════════════════════════════════════════
    UI PRIMITIVES
    ════════════════════════════════════════════ */
-const KpiCard: React.FC<{ icon: React.ReactNode; label: string; value: string; tone: string }> = ({ icon, label, value, tone }) => (
-  <div className={`card bg-base-100 border-r-4 border-${tone} shadow-sm`}>
-    <div className="card-body p-3">
-      <div className="flex items-center gap-2 text-xs opacity-70">{icon}{label}</div>
-      <div className="text-xl font-bold">{value}</div>
+const KpiCard: React.FC<{ icon: React.ReactNode; label: string; value: string; tone: string }> = ({ icon, label, value, tone }) => {
+  const borderCls: Record<string, string> = {
+    primary: 'border-primary', success: 'border-success', error: 'border-error',
+    info: 'border-info', warning: 'border-warning',
+  };
+  return (
+    <div className={`card bg-base-100 border-r-4 ${borderCls[tone] || 'border-primary'} shadow-sm`}>
+      <div className="card-body p-3">
+        <div className="flex items-center gap-2 text-xs opacity-70">{icon}{label}</div>
+        <div className="text-xl font-bold">{value}</div>
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 const Input: React.FC<{ label: string; v: string; on: (v: string) => void; placeholder?: string; type?: string }> =
   ({ label, v, on, placeholder, type }) => (
