@@ -5,8 +5,9 @@ import {
   AlertTriangle, CheckCircle, TrendingUp, BarChart3, Shield, ArrowLeft,
   Landmark, Briefcase, CircleDollarSign, Receipt, ChevronRight, Eye, EyeOff, LogOut,
   Clock, ScrollText, Moon, Sun, Search, UserPlus, Lock, PieChart, Activity,
-  Download, Filter, RefreshCw, Settings, ChevronDown, X, Menu
+  Download, Filter, RefreshCw, Settings, ChevronDown, X, Menu, ArrowLeftRight
 } from 'lucide-react';
+import TransactionsTab from './modules/TransactionsTab';
 
 async function runSQL(sql: string, params: any[] = []): Promise<any> {
   try {
@@ -525,6 +526,7 @@ const App: React.FC = () => {
     { icon: <DollarSign size={16} />, label: 'درآمد' },
     { icon: <Users size={16} />, label: 'کارمندان' },
     { icon: <Calculator size={16} />, label: 'کسورات' },
+    { icon: <ArrowLeftRight size={16} />, label: 'معاملات' },
     { icon: <FileText size={16} />, label: 'گزارش' },
     { icon: <PieChart size={16} />, label: 'گزارش ربع‌وار' },
     { icon: <ScrollText size={16} />, label: 'لاگ' },
@@ -598,7 +600,7 @@ const App: React.FC = () => {
                 className={`tab gap-2 whitespace-nowrap transition-all ${tab === i ? 'tab-active font-bold text-primary' : 'opacity-60 hover:opacity-100'}`}
                 onClick={() => setTab(i)}>
                 {t.icon} {t.label}
-                {i === 7 && logs.length > 0 && <span className="badge badge-xs badge-primary">{logs.length}</span>}
+                {i === 8 && logs.length > 0 && <span className="badge badge-xs badge-primary">{logs.length}</span>}
               </button>
             ))}
           </div>
@@ -613,7 +615,7 @@ const App: React.FC = () => {
                   className={`btn btn-ghost btn-sm justify-start gap-3 ${tab === i ? 'btn-active text-primary font-bold' : ''}`}
                   onClick={() => { setTab(i); setMobileMenu(false); }}>
                   {t.icon} {t.label}
-                  {i === 7 && logs.length > 0 && <span className="badge badge-xs badge-primary mr-auto">{logs.length}</span>}
+                  {i === 8 && logs.length > 0 && <span className="badge badge-xs badge-primary mr-auto">{logs.length}</span>}
                 </button>
               ))}
             </div>
@@ -634,9 +636,10 @@ const App: React.FC = () => {
           {tab === 2 && <IncomeTab incomes={incomes} onAdd={addIncome} onDel={delIncome} calc={calc} />}
           {tab === 3 && <EmployeeTab employees={employees} onAdd={addEmployee} onDel={delEmployee} calc={calc} />}
           {tab === 4 && <DeductionTab deductions={deductions} onAdd={addDeduction} onDel={delDeduction} calc={calc} />}
-          {tab === 5 && <ReportTab company={company} calc={calc} employees={employees} incomes={incomes} deductions={deductions} />}
-          {tab === 6 && <QuarterlyReportTab company={company} incomes={incomes} deductions={deductions} employees={employees} />}
-          {tab === 7 && <LogTab logs={logs} onClear={() => { setLogs([]); window.tasklet.sqlExec(`DELETE FROM tax_logs`); }} />}
+          {tab === 5 && <TransactionsTab onLog={(a, d) => addLog('معاملات', a + ' — ' + d, '')} onFlash={flash} />}
+          {tab === 6 && <ReportTab company={company} calc={calc} employees={employees} incomes={incomes} deductions={deductions} />}
+          {tab === 7 && <QuarterlyReportTab company={company} incomes={incomes} deductions={deductions} employees={employees} />}
+          {tab === 8 && <LogTab logs={logs} onClear={() => { setLogs([]); window.tasklet.sqlExec(`DELETE FROM tax_logs`); }} />}
         </div>
 
         {/* Footer */}
