@@ -601,8 +601,10 @@ const App: React.FC = () => {
         {/* Header */}
         <div className="flex items-center justify-between mb-5">
           <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center shadow-lg shadow-primary/20">
-              <Landmark size={22} className="text-primary-content" />
+            <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center shadow-lg shadow-primary/20 overflow-hidden">
+              {logoUrl
+                ? <img src={logoUrl} alt="لوگو" className="w-full h-full object-contain bg-base-100" />
+                : <Landmark size={22} className="text-primary-content" />}
             </div>
             <div>
               <h1 className="font-black text-lg">سیستم مالیاتی صرافی</h1>
