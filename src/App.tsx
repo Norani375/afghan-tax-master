@@ -904,6 +904,35 @@ const DashboardTab: React.FC<{ calc: any; incomes: Income[]; employees: Employee
    ═══════════════════════════════════════ */
 const CompanyTab: React.FC<{ company: Company; onSave: (c: Company) => void }> = ({ company, onSave }) => {
   const [form, setForm] = useState(company);
+  const [logo, setLogo] = useState<string>(() => localStorage.getItem('tax_logo') || '');
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    if (!/^image\/(png|jpe?g|svg\+xml|webp)$/.test(f.type)) {
+      alert('فقط تصاویر PNG/JPG/SVG/WEBP قابل بارگذاری‌اند');
+      return;
+    }
+    if (f.size > 1024 * 1024) {
+      alert('حجم لوگو باید کمتر از ۱ مگابایت باشد');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const url = String(reader.result || '');
+      setLogo(url);
+      localStorage.setItem('tax_logo', url);
+      window.dispatchEvent(new Event('tax_logo_updated'));
+    };
+    reader.readAsDataURL(f);
+  };
+  const clearLogo = () => {
+    setLogo('');
+    localStorage.removeItem('tax_logo');
+    window.dispatchEvent(new Event('tax_logo_updated'));
+  };
+
   const fields: { key: keyof Company; label: string; ph: string; required?: boolean; icon: React.ReactNode }[] = [
     { key: 'name', label: 'نام شرکت صرافی', ph: 'مثلاً: صرافی نورانی', required: true, icon: <Building2 size={14} /> },
     { key: 'manager', label: 'نام مدیر عامل', ph: '', icon: <Users size={14} /> },
@@ -927,6 +956,33 @@ const CompanyTab: React.FC<{ company: Company; onSave: (c: Company) => void }> =
         </div>
         <PrintBtn sectionId="print-company" title="اطلاعات شرکت" />
       </div>
+
+      {/* Logo uploader */}
+      <div className="card bg-base-200/40 border border-base-300/60 p-4">
+        <div className="flex items-center gap-4">
+          <div className="w-20 h-20 rounded-2xl bg-base-100 border border-base-300 flex items-center justify-center overflow-hidden shrink-0">
+            {logo
+              ? <img src={logo} alt="لوگو شرکت" className="w-full h-full object-contain" />
+              : <Building2 size={28} className="opacity-30" />}
+          </div>
+          <div className="flex-1">
+            <div className="text-sm font-semibold mb-1">لوگو شرکت</div>
+            <div className="text-[11px] opacity-50 mb-2">PNG/JPG/SVG • حداکثر ۱ مگابایت • در گزارش‌های چاپی نمایش می‌یابد</div>
+            <div className="flex gap-2">
+              <input ref={fileRef} type="file" accept="image/png,image/jpeg,image/svg+xml,image/webp" className="hidden" onChange={handleLogoUpload} />
+              <button type="button" className="btn btn-primary btn-sm" onClick={() => fileRef.current?.click()}>
+                <Plus size={14} /> {logo ? 'تعویض لوگو' : 'بارگذاری لوگو'}
+              </button>
+              {logo && (
+                <button type="button" className="btn btn-ghost btn-sm text-error" onClick={clearLogo}>
+                  <Trash2 size={14} /> حذف
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div id="print-company" className="space-y-3">
         {fields.map(f => (
           <div key={f.key}>
