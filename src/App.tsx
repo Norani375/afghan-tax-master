@@ -435,6 +435,7 @@ const App: React.FC = () => {
 
       const mx = await window.tasklet.sqlQuery(`SELECT MAX(m) as maxid FROM (SELECT MAX(id) as m FROM tax_incomes2 UNION ALL SELECT MAX(id) FROM tax_employees2 UNION ALL SELECT MAX(id) FROM tax_deductions2)`);
       setNextId(((mx[0]?.maxid as number) || 0) + 1);
+      await loadDerivedIncomes();
       setLoading(false);
     })();
   }, []);
