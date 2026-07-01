@@ -351,12 +351,49 @@ const App: React.FC = () => {
     fiscalEnd: '1404/12/29', address: '', phone: '', manager: ''
   });
   const [incomes, setIncomes] = useState<Income[]>([]);
+  const [derivedIncomes, setDerivedIncomes] = useState<Income[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [deductions, setDeductions] = useState<Deduction[]>([]);
   const [nextId, setNextId] = useState(1);
   const [toast, setToast] = useState('');
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const logIdRef = useRef(0);
+
+  /* ── Smart derivation: transactions → incomes ── */
+  const quarterFromDate = (d: string): number => {
+    if (!d) return 1;
+    // supports 2025-03-15 or 1404/03/15 (shamsi already 1..12 → quarters same mapping)
+    const parts = d.split(/[-\/]/).map(x => parseInt(x, 10));
+    const m = parts.length >= 2 ? parts[1] : 1;
+    if (m <= 3) return 1; if (m <= 6) return 2; if (m <= 9) return 3; return 4;
+  };
+  const loadDerivedIncomes = async () => {
+    try {
+      const ex = await window.tasklet.sqlQuery(`SELECT id, date, profit, buy_currency, sell_currency FROM tax_exchanges`);
+      const rm = await window.tasklet.sqlQuery(`SELECT id, date, com, currency, sender, receiver FROM tax_remit_out`);
+      const out: Income[] = [];
+      let vid = -1;
+      (ex || []).forEach((r: any) => {
+        const amt = Number(r.profit) || 0;
+        if (amt === 0) return;
+        out.push({
+          id: vid--, category: 'تبادله اسعار',
+          description: `مفاد تبادله #${r.id} (${r.buy_currency || ''}→${r.sell_currency || ''})`,
+          amount: amt, quarter: quarterFromDate(r.date as string), date: (r.date as string) || today()
+        });
+      });
+      (rm || []).forEach((r: any) => {
+        const amt = Number(r.com) || 0;
+        if (amt === 0) return;
+        out.push({
+          id: vid--, category: 'کمیشن',
+          description: `کمیشن حواله #${r.id} ${r.currency || ''} (${r.sender || ''}→${r.receiver || ''})`,
+          amount: amt, quarter: quarterFromDate(r.date as string), date: (r.date as string) || today()
+        });
+      });
+      setDerivedIncomes(out);
+    } catch { setDerivedIncomes([]); }
+  };
 
   /* ── Theme ── */
   useEffect(() => {
