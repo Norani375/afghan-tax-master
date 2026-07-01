@@ -351,12 +351,49 @@ const App: React.FC = () => {
     fiscalEnd: '1404/12/29', address: '', phone: '', manager: ''
   });
   const [incomes, setIncomes] = useState<Income[]>([]);
+  const [derivedIncomes, setDerivedIncomes] = useState<Income[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [deductions, setDeductions] = useState<Deduction[]>([]);
   const [nextId, setNextId] = useState(1);
   const [toast, setToast] = useState('');
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const logIdRef = useRef(0);
+
+  /* ── Smart derivation: transactions → incomes ── */
+  const quarterFromDate = (d: string): number => {
+    if (!d) return 1;
+    // supports 2025-03-15 or 1404/03/15 (shamsi already 1..12 → quarters same mapping)
+    const parts = d.split(/[-\/]/).map(x => parseInt(x, 10));
+    const m = parts.length >= 2 ? parts[1] : 1;
+    if (m <= 3) return 1; if (m <= 6) return 2; if (m <= 9) return 3; return 4;
+  };
+  const loadDerivedIncomes = async () => {
+    try {
+      const ex = await window.tasklet.sqlQuery(`SELECT id, date, profit, buy_currency, sell_currency FROM tax_exchanges`);
+      const rm = await window.tasklet.sqlQuery(`SELECT id, date, com, currency, sender, receiver FROM tax_remit_out`);
+      const out: Income[] = [];
+      let vid = -1;
+      (ex || []).forEach((r: any) => {
+        const amt = Number(r.profit) || 0;
+        if (amt === 0) return;
+        out.push({
+          id: vid--, category: 'تبادله اسعار',
+          description: `مفاد تبادله #${r.id} (${r.buy_currency || ''}→${r.sell_currency || ''})`,
+          amount: amt, quarter: quarterFromDate(r.date as string), date: (r.date as string) || today()
+        });
+      });
+      (rm || []).forEach((r: any) => {
+        const amt = Number(r.com) || 0;
+        if (amt === 0) return;
+        out.push({
+          id: vid--, category: 'کمیشن',
+          description: `کمیشن حواله #${r.id} ${r.currency || ''} (${r.sender || ''}→${r.receiver || ''})`,
+          amount: amt, quarter: quarterFromDate(r.date as string), date: (r.date as string) || today()
+        });
+      });
+      setDerivedIncomes(out);
+    } catch { setDerivedIncomes([]); }
+  };
 
   /* ── Theme ── */
   useEffect(() => {
@@ -398,6 +435,7 @@ const App: React.FC = () => {
 
       const mx = await window.tasklet.sqlQuery(`SELECT MAX(m) as maxid FROM (SELECT MAX(id) as m FROM tax_incomes2 UNION ALL SELECT MAX(id) FROM tax_employees2 UNION ALL SELECT MAX(id) FROM tax_deductions2)`);
       setNextId(((mx[0]?.maxid as number) || 0) + 1);
+      await loadDerivedIncomes();
       setLoading(false);
     })();
   }, []);
@@ -454,9 +492,12 @@ const App: React.FC = () => {
     if (item) addLog('کسورات', 'حذف', `${item.description}`);
   };
 
-  /* ── Calculations ── */
+  /* ── Calculations (merges manual incomes + auto-derived transactions) ── */
+  const mergedIncomes = useMemo<Income[]>(() => [...incomes, ...derivedIncomes], [incomes, derivedIncomes]);
+
   const calc = useMemo(() => {
-    const totalIncome = incomes.reduce((s, i) => s + i.amount, 0);
+    const src = mergedIncomes;
+    const totalIncome = src.reduce((s, i) => s + i.amount, 0);
     const totalDeductions = deductions.reduce((s, d) => s + d.amount, 0);
     const totalInsurance = employees.reduce((s, e) => s + e.insurance, 0) * 12;
     const totalSalaries = employees.reduce((s, e) => s + e.salary, 0) * 12;
@@ -465,10 +506,10 @@ const App: React.FC = () => {
     const netIncome = totalIncome - operatingExpenses;
 
     const byCategory = CATS.map((cat, idx) => ({
-      category: cat, amount: incomes.filter(i => i.category === cat).reduce((s, i) => s + i.amount, 0), color: CAT_COLORS[idx]
+      category: cat, amount: src.filter(i => i.category === cat).reduce((s, i) => s + i.amount, 0), color: CAT_COLORS[idx]
     }));
     const byQuarter = [1, 2, 3, 4].map(q => {
-      const qInc = incomes.filter(i => i.quarter === q).reduce((s, i) => s + i.amount, 0);
+      const qInc = src.filter(i => i.quarter === q).reduce((s, i) => s + i.amount, 0);
       const qDed = totalDeductions / 4;
       const qNet = Math.max(0, qInc - qDed);
       return { quarter: q, income: qInc, deductions: qDed, net: qNet, tax: qNet * 0.04 };
@@ -481,31 +522,32 @@ const App: React.FC = () => {
     const warnings: string[] = [];
     if (!company.name) warnings.push('نام شرکت وارد نشده');
     if (!company.tin) warnings.push('TIN وارد نشده — برای مستوفیت الزامی');
-    if (incomes.length === 0) warnings.push('درآمدی ثبت نشده');
+    if (src.length === 0) warnings.push('درآمدی ثبت نشده');
     if (employees.length > 0 && totalSalaryTax === 0) warnings.push('مالیات معاش صفر');
-    [1,2,3,4].forEach(q => { if (!incomes.some(i => i.quarter === q)) warnings.push(`ربع ${q} بدون درآمد`); });
+    [1,2,3,4].forEach(q => { if (!src.some(i => i.quarter === q)) warnings.push(`ربع ${q} بدون درآمد`); });
     if (netIncome < 0) warnings.push('عواید خالص منفی');
-    if (deductions.length === 0 && incomes.length > 0) warnings.push('کسوراتی ثبت نشده');
+    if (deductions.length === 0 && src.length > 0) warnings.push('کسوراتی ثبت نشده');
 
     const validations: string[] = [];
-    if (company.name && company.tin && incomes.length > 0) validations.push('اطلاعات پایه کامل');
-    if (new Set(incomes.map(i => i.quarter)).size === 4) validations.push('هر ۴ ربع ثبت شده');
+    if (company.name && company.tin && src.length > 0) validations.push('اطلاعات پایه کامل');
+    if (new Set(src.map(i => i.quarter)).size === 4) validations.push('هر ۴ ربع ثبت شده');
     if (employees.length > 0) validations.push('کارمندان ثبت شده');
     if (deductions.length > 0) validations.push('کسورات اعمال شده');
+    if (derivedIncomes.length > 0) validations.push(`${derivedIncomes.length} تراکنش خودکار الحاق شد`);
 
     // completion score
     let score = 0;
     if (company.name) score += 15;
     if (company.tin) score += 15;
-    if (incomes.length > 0) score += 20;
-    if (new Set(incomes.map(i => i.quarter)).size === 4) score += 15;
+    if (src.length > 0) score += 20;
+    if (new Set(src.map(i => i.quarter)).size === 4) score += 15;
     if (employees.length > 0) score += 15;
     if (deductions.length > 0) score += 10;
     if (company.license) score += 5;
     if (company.manager) score += 5;
 
-    return { totalIncome, totalDeductions, totalInsurance, totalSalaries, totalSalaryTax, operatingExpenses, netIncome, byCategory, byQuarter, quarterlyTaxTotal, annualTax, totalTax, effectiveRate, warnings, validations, score };
-  }, [incomes, employees, deductions, company]);
+    return { totalIncome, totalDeductions, totalInsurance, totalSalaries, totalSalaryTax, operatingExpenses, netIncome, byCategory, byQuarter, quarterlyTaxTotal, annualTax, totalTax, effectiveRate, warnings, validations, score, derivedCount: derivedIncomes.length };
+  }, [mergedIncomes, employees, deductions, company, derivedIncomes.length]);
 
   /* ── Auth Gate ── */
   if (!user) return <LoginScreen onLogin={(u) => { setUser(u); }} />;
@@ -630,15 +672,15 @@ const App: React.FC = () => {
         </div>
 
         {/* Tab Content */}
-        <div key={`t-${tab}`} className="animate-[fadeIn_0.3s_ease-out]">
-          {tab === 0 && <DashboardTab calc={calc} incomes={incomes} employees={employees} />}
+        <div key={`t-${tab}`} className="animate-[fadeIn_0.3s_ease-out]" onMouseEnter={() => { if (tab === 0 || tab === 2 || tab === 6 || tab === 7) loadDerivedIncomes(); }}>
+          {tab === 0 && <DashboardTab calc={calc} incomes={mergedIncomes} employees={employees} />}
           {tab === 1 && <CompanyTab company={company} onSave={saveCompany} />}
           {tab === 2 && <IncomeTab incomes={incomes} onAdd={addIncome} onDel={delIncome} calc={calc} />}
           {tab === 3 && <EmployeeTab employees={employees} onAdd={addEmployee} onDel={delEmployee} calc={calc} />}
           {tab === 4 && <DeductionTab deductions={deductions} onAdd={addDeduction} onDel={delDeduction} calc={calc} />}
-          {tab === 5 && <TransactionsTab onLog={(a, d) => addLog('معاملات', a + ' — ' + d, '')} onFlash={flash} />}
-          {tab === 6 && <ReportTab company={company} calc={calc} employees={employees} incomes={incomes} deductions={deductions} />}
-          {tab === 7 && <QuarterlyReportTab company={company} incomes={incomes} deductions={deductions} employees={employees} />}
+          {tab === 5 && <TransactionsTab onLog={(a, d) => addLog('معاملات', a + ' — ' + d, '')} onFlash={(m) => { flash(m); loadDerivedIncomes(); }} />}
+          {tab === 6 && <ReportTab company={company} calc={calc} employees={employees} incomes={mergedIncomes} deductions={deductions} />}
+          {tab === 7 && <QuarterlyReportTab company={company} incomes={mergedIncomes} deductions={deductions} employees={employees} />}
           {tab === 8 && <LogTab logs={logs} onClear={() => { setLogs([]); window.tasklet.sqlExec(`DELETE FROM tax_logs`); }} />}
         </div>
 
