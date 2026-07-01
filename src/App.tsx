@@ -672,7 +672,7 @@ const App: React.FC = () => {
         </div>
 
         {/* Tab Content */}
-        <div key={`t-${tab}`} className="animate-[fadeIn_0.3s_ease-out]">
+        <div key={`t-${tab}`} className="animate-[fadeIn_0.3s_ease-out]" onMouseEnter={() => { if (tab === 0 || tab === 2 || tab === 6 || tab === 7) loadDerivedIncomes(); }}>
           {tab === 0 && <DashboardTab calc={calc} incomes={mergedIncomes} employees={employees} />}
           {tab === 1 && <CompanyTab company={company} onSave={saveCompany} />}
           {tab === 2 && <IncomeTab incomes={incomes} onAdd={addIncome} onDel={delIncome} calc={calc} />}
