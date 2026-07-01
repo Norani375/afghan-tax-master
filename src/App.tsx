@@ -400,6 +400,18 @@ const App: React.FC = () => {
     document.documentElement.setAttribute('data-theme', theme);
   }, [theme]);
 
+  /* ── Logo (shared with reports via localStorage) ── */
+  const [logoUrl, setLogoUrl] = useState<string>(() => localStorage.getItem('tax_logo') || '');
+  useEffect(() => {
+    const sync = () => setLogoUrl(localStorage.getItem('tax_logo') || '');
+    window.addEventListener('tax_logo_updated', sync);
+    window.addEventListener('storage', sync);
+    return () => {
+      window.removeEventListener('tax_logo_updated', sync);
+      window.removeEventListener('storage', sync);
+    };
+  }, []);
+
   /* ── Log function ── */
   const addLog = (tabName: string, action: string, detail: string) => {
     logIdRef.current += 1;
