@@ -673,14 +673,14 @@ const App: React.FC = () => {
 
         {/* Tab Content */}
         <div key={`t-${tab}`} className="animate-[fadeIn_0.3s_ease-out]">
-          {tab === 0 && <DashboardTab calc={calc} incomes={incomes} employees={employees} />}
+          {tab === 0 && <DashboardTab calc={calc} incomes={mergedIncomes} employees={employees} />}
           {tab === 1 && <CompanyTab company={company} onSave={saveCompany} />}
           {tab === 2 && <IncomeTab incomes={incomes} onAdd={addIncome} onDel={delIncome} calc={calc} />}
           {tab === 3 && <EmployeeTab employees={employees} onAdd={addEmployee} onDel={delEmployee} calc={calc} />}
           {tab === 4 && <DeductionTab deductions={deductions} onAdd={addDeduction} onDel={delDeduction} calc={calc} />}
-          {tab === 5 && <TransactionsTab onLog={(a, d) => addLog('معاملات', a + ' — ' + d, '')} onFlash={flash} />}
-          {tab === 6 && <ReportTab company={company} calc={calc} employees={employees} incomes={incomes} deductions={deductions} />}
-          {tab === 7 && <QuarterlyReportTab company={company} incomes={incomes} deductions={deductions} employees={employees} />}
+          {tab === 5 && <TransactionsTab onLog={(a, d) => addLog('معاملات', a + ' — ' + d, '')} onFlash={(m) => { flash(m); loadDerivedIncomes(); }} />}
+          {tab === 6 && <ReportTab company={company} calc={calc} employees={employees} incomes={mergedIncomes} deductions={deductions} />}
+          {tab === 7 && <QuarterlyReportTab company={company} incomes={mergedIncomes} deductions={deductions} employees={employees} />}
           {tab === 8 && <LogTab logs={logs} onClear={() => { setLogs([]); window.tasklet.sqlExec(`DELETE FROM tax_logs`); }} />}
         </div>
 
