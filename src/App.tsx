@@ -492,9 +492,12 @@ const App: React.FC = () => {
     if (item) addLog('کسورات', 'حذف', `${item.description}`);
   };
 
-  /* ── Calculations ── */
+  /* ── Calculations (merges manual incomes + auto-derived transactions) ── */
+  const mergedIncomes = useMemo<Income[]>(() => [...incomes, ...derivedIncomes], [incomes, derivedIncomes]);
+
   const calc = useMemo(() => {
-    const totalIncome = incomes.reduce((s, i) => s + i.amount, 0);
+    const src = mergedIncomes;
+    const totalIncome = src.reduce((s, i) => s + i.amount, 0);
     const totalDeductions = deductions.reduce((s, d) => s + d.amount, 0);
     const totalInsurance = employees.reduce((s, e) => s + e.insurance, 0) * 12;
     const totalSalaries = employees.reduce((s, e) => s + e.salary, 0) * 12;
@@ -503,10 +506,10 @@ const App: React.FC = () => {
     const netIncome = totalIncome - operatingExpenses;
 
     const byCategory = CATS.map((cat, idx) => ({
-      category: cat, amount: incomes.filter(i => i.category === cat).reduce((s, i) => s + i.amount, 0), color: CAT_COLORS[idx]
+      category: cat, amount: src.filter(i => i.category === cat).reduce((s, i) => s + i.amount, 0), color: CAT_COLORS[idx]
     }));
     const byQuarter = [1, 2, 3, 4].map(q => {
-      const qInc = incomes.filter(i => i.quarter === q).reduce((s, i) => s + i.amount, 0);
+      const qInc = src.filter(i => i.quarter === q).reduce((s, i) => s + i.amount, 0);
       const qDed = totalDeductions / 4;
       const qNet = Math.max(0, qInc - qDed);
       return { quarter: q, income: qInc, deductions: qDed, net: qNet, tax: qNet * 0.04 };
@@ -519,31 +522,32 @@ const App: React.FC = () => {
     const warnings: string[] = [];
     if (!company.name) warnings.push('نام شرکت وارد نشده');
     if (!company.tin) warnings.push('TIN وارد نشده — برای مستوفیت الزامی');
-    if (incomes.length === 0) warnings.push('درآمدی ثبت نشده');
+    if (src.length === 0) warnings.push('درآمدی ثبت نشده');
     if (employees.length > 0 && totalSalaryTax === 0) warnings.push('مالیات معاش صفر');
-    [1,2,3,4].forEach(q => { if (!incomes.some(i => i.quarter === q)) warnings.push(`ربع ${q} بدون درآمد`); });
+    [1,2,3,4].forEach(q => { if (!src.some(i => i.quarter === q)) warnings.push(`ربع ${q} بدون درآمد`); });
     if (netIncome < 0) warnings.push('عواید خالص منفی');
-    if (deductions.length === 0 && incomes.length > 0) warnings.push('کسوراتی ثبت نشده');
+    if (deductions.length === 0 && src.length > 0) warnings.push('کسوراتی ثبت نشده');
 
     const validations: string[] = [];
-    if (company.name && company.tin && incomes.length > 0) validations.push('اطلاعات پایه کامل');
-    if (new Set(incomes.map(i => i.quarter)).size === 4) validations.push('هر ۴ ربع ثبت شده');
+    if (company.name && company.tin && src.length > 0) validations.push('اطلاعات پایه کامل');
+    if (new Set(src.map(i => i.quarter)).size === 4) validations.push('هر ۴ ربع ثبت شده');
     if (employees.length > 0) validations.push('کارمندان ثبت شده');
     if (deductions.length > 0) validations.push('کسورات اعمال شده');
+    if (derivedIncomes.length > 0) validations.push(`${derivedIncomes.length} تراکنش خودکار الحاق شد`);
 
     // completion score
     let score = 0;
     if (company.name) score += 15;
     if (company.tin) score += 15;
-    if (incomes.length > 0) score += 20;
-    if (new Set(incomes.map(i => i.quarter)).size === 4) score += 15;
+    if (src.length > 0) score += 20;
+    if (new Set(src.map(i => i.quarter)).size === 4) score += 15;
     if (employees.length > 0) score += 15;
     if (deductions.length > 0) score += 10;
     if (company.license) score += 5;
     if (company.manager) score += 5;
 
-    return { totalIncome, totalDeductions, totalInsurance, totalSalaries, totalSalaryTax, operatingExpenses, netIncome, byCategory, byQuarter, quarterlyTaxTotal, annualTax, totalTax, effectiveRate, warnings, validations, score };
-  }, [incomes, employees, deductions, company]);
+    return { totalIncome, totalDeductions, totalInsurance, totalSalaries, totalSalaryTax, operatingExpenses, netIncome, byCategory, byQuarter, quarterlyTaxTotal, annualTax, totalTax, effectiveRate, warnings, validations, score, derivedCount: derivedIncomes.length };
+  }, [mergedIncomes, employees, deductions, company, derivedIncomes.length]);
 
   /* ── Auth Gate ── */
   if (!user) return <LoginScreen onLogin={(u) => { setUser(u); }} />;
