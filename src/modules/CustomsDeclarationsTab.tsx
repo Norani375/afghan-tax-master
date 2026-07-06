@@ -3,10 +3,10 @@ import { Plus, Trash2, Search, Upload, Download, FileText, RefreshCw, AlertCircl
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '../integrations/supabase/client';
 import {
   calcImportTaxes, validateTIN, CUSTOMS_OFFICES, CURRENCIES,
-} from '@/lib/tax-engine';
+} from '../lib/tax-engine';
 
 interface Declaration {
   id: string;
