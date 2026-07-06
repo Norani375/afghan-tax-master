@@ -5,7 +5,7 @@ import {
   AlertTriangle, CheckCircle, TrendingUp, BarChart3, Shield, ArrowLeft,
   Landmark, Briefcase, CircleDollarSign, Receipt, ChevronRight, Eye, EyeOff, LogOut,
   Clock, ScrollText, Moon, Sun, Search, UserPlus, Lock, PieChart, Activity,
-  Download, Filter, RefreshCw, Settings, ChevronDown, X, Menu, ArrowLeftRight
+  Download, Filter, RefreshCw, Settings, ChevronDown, X, Menu, ArrowLeftRight, Package
 } from 'lucide-react';
 import TransactionsTab from './modules/TransactionsTab';
 import CustomsDeclarationsTab from './modules/CustomsDeclarationsTab';
