@@ -8,6 +8,7 @@ import {
   Download, Filter, RefreshCw, Settings, ChevronDown, X, Menu, ArrowLeftRight
 } from 'lucide-react';
 import TransactionsTab from './modules/TransactionsTab';
+import CustomsDeclarationsTab from './modules/CustomsDeclarationsTab';
 
 async function runSQL(sql: string, params: any[] = []): Promise<any> {
   try {
