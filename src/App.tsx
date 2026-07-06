@@ -695,7 +695,7 @@ const App: React.FC = () => {
           {tab === 3 && <EmployeeTab employees={employees} onAdd={addEmployee} onDel={delEmployee} calc={calc} />}
           {tab === 4 && <DeductionTab deductions={deductions} onAdd={addDeduction} onDel={delDeduction} calc={calc} />}
           {tab === 5 && <TransactionsTab onLog={(a, d) => addLog('معاملات', a + ' — ' + d, '')} onFlash={(m) => { flash(m); loadDerivedIncomes(); }} />}
-          {tab === 6 && <CustomsDeclarationsTab onLog={(a, d) => addLog('اظهارنامه', a + ' — ' + d)} onFlash={flash} />}
+          {tab === 6 && <CustomsDeclarationsTab onLog={(a, d) => addLog('اظهارنامه', a, d)} onFlash={flash} />}
           {tab === 7 && <ReportTab company={company} calc={calc} employees={employees} incomes={mergedIncomes} deductions={deductions} />}
           {tab === 8 && <QuarterlyReportTab company={company} incomes={mergedIncomes} deductions={deductions} employees={employees} />}
           {tab === 9 && <LogTab logs={logs} onClear={() => { setLogs([]); window.tasklet.sqlExec(`DELETE FROM tax_logs`); }} />}
