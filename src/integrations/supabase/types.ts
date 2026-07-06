@@ -270,6 +270,125 @@ export type Database = {
           },
         ]
       }
+      customs_declarations: {
+        Row: {
+          bill_of_lading_no: string | null
+          broker_name: string | null
+          brt_amount: number | null
+          brt_rate: number | null
+          company_id: string | null
+          country: string | null
+          created_at: string
+          currency: string
+          customs_duty: number | null
+          customs_duty_rate: number | null
+          customs_office: string
+          declaration_date: string
+          declaration_no: string
+          declaration_type: string
+          exchange_rate: number
+          goods_description: string
+          hs_code: string | null
+          id: string
+          importer_tin: string | null
+          invoice_value: number
+          notes: string | null
+          payment_date: string | null
+          payment_status: string
+          quantity: number | null
+          receipt_no: string | null
+          red_tax: number | null
+          total_tax: number | null
+          unit: string | null
+          updated_at: string
+          user_id: string
+          value_afn: number
+          vat_amount: number | null
+          vat_rate: number | null
+          vehicle_vin: string | null
+        }
+        Insert: {
+          bill_of_lading_no?: string | null
+          broker_name?: string | null
+          brt_amount?: number | null
+          brt_rate?: number | null
+          company_id?: string | null
+          country?: string | null
+          created_at?: string
+          currency?: string
+          customs_duty?: number | null
+          customs_duty_rate?: number | null
+          customs_office: string
+          declaration_date?: string
+          declaration_no: string
+          declaration_type: string
+          exchange_rate?: number
+          goods_description: string
+          hs_code?: string | null
+          id?: string
+          importer_tin?: string | null
+          invoice_value?: number
+          notes?: string | null
+          payment_date?: string | null
+          payment_status?: string
+          quantity?: number | null
+          receipt_no?: string | null
+          red_tax?: number | null
+          total_tax?: number | null
+          unit?: string | null
+          updated_at?: string
+          user_id: string
+          value_afn?: number
+          vat_amount?: number | null
+          vat_rate?: number | null
+          vehicle_vin?: string | null
+        }
+        Update: {
+          bill_of_lading_no?: string | null
+          broker_name?: string | null
+          brt_amount?: number | null
+          brt_rate?: number | null
+          company_id?: string | null
+          country?: string | null
+          created_at?: string
+          currency?: string
+          customs_duty?: number | null
+          customs_duty_rate?: number | null
+          customs_office?: string
+          declaration_date?: string
+          declaration_no?: string
+          declaration_type?: string
+          exchange_rate?: number
+          goods_description?: string
+          hs_code?: string | null
+          id?: string
+          importer_tin?: string | null
+          invoice_value?: number
+          notes?: string | null
+          payment_date?: string | null
+          payment_status?: string
+          quantity?: number | null
+          receipt_no?: string | null
+          red_tax?: number | null
+          total_tax?: number | null
+          unit?: string | null
+          updated_at?: string
+          user_id?: string
+          value_afn?: number
+          vat_amount?: number | null
+          vat_rate?: number | null
+          vehicle_vin?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customs_declarations_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       employees: {
         Row: {
           branch_id: string | null
@@ -320,6 +439,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      exchange_rates: {
+        Row: {
+          created_at: string
+          currency_code: string
+          id: string
+          rate_date: string
+          rate_to_afn: number
+          source: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          currency_code: string
+          id?: string
+          rate_date?: string
+          rate_to_afn: number
+          source?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          currency_code?: string
+          id?: string
+          rate_date?: string
+          rate_to_afn?: number
+          source?: string | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       expense_categories: {
         Row: {
@@ -411,6 +560,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      hs_tariffs: {
+        Row: {
+          created_at: string
+          description_fa: string
+          duty_rate: number
+          hs_code: string
+          id: string
+          notes: string | null
+          restricted: boolean
+          updated_at: string
+          vat_applicable: boolean
+        }
+        Insert: {
+          created_at?: string
+          description_fa: string
+          duty_rate?: number
+          hs_code: string
+          id?: string
+          notes?: string | null
+          restricted?: boolean
+          updated_at?: string
+          vat_applicable?: boolean
+        }
+        Update: {
+          created_at?: string
+          description_fa?: string
+          duty_rate?: number
+          hs_code?: string
+          id?: string
+          notes?: string | null
+          restricted?: boolean
+          updated_at?: string
+          vat_applicable?: boolean
+        }
+        Relationships: []
       }
       incomes: {
         Row: {
@@ -592,6 +777,45 @@ export type Database = {
           snapshot?: Json | null
           user_id?: string
           year?: number
+        }
+        Relationships: []
+      }
+      tax_brackets: {
+        Row: {
+          active: boolean
+          bracket_type: string
+          created_at: string
+          fixed_deduction: number
+          id: string
+          max_amount: number | null
+          min_amount: number
+          notes: string | null
+          rate: number
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          bracket_type: string
+          created_at?: string
+          fixed_deduction?: number
+          id?: string
+          max_amount?: number | null
+          min_amount?: number
+          notes?: string | null
+          rate?: number
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          bracket_type?: string
+          created_at?: string
+          fixed_deduction?: number
+          id?: string
+          max_amount?: number | null
+          min_amount?: number
+          notes?: string | null
+          rate?: number
+          updated_at?: string
         }
         Relationships: []
       }

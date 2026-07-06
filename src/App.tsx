@@ -5,9 +5,10 @@ import {
   AlertTriangle, CheckCircle, TrendingUp, BarChart3, Shield, ArrowLeft,
   Landmark, Briefcase, CircleDollarSign, Receipt, ChevronRight, Eye, EyeOff, LogOut,
   Clock, ScrollText, Moon, Sun, Search, UserPlus, Lock, PieChart, Activity,
-  Download, Filter, RefreshCw, Settings, ChevronDown, X, Menu, ArrowLeftRight
+  Download, Filter, RefreshCw, Settings, ChevronDown, X, Menu, ArrowLeftRight, Package
 } from 'lucide-react';
 import TransactionsTab from './modules/TransactionsTab';
+import CustomsDeclarationsTab from './modules/CustomsDeclarationsTab';
 
 async function runSQL(sql: string, params: any[] = []): Promise<any> {
   try {
@@ -581,6 +582,7 @@ const App: React.FC = () => {
     { icon: <Users size={16} />, label: 'کارمندان' },
     { icon: <Calculator size={16} />, label: 'کسورات' },
     { icon: <ArrowLeftRight size={16} />, label: 'معاملات' },
+    { icon: <Package size={16} />, label: 'اظهارنامه گمرکی' },
     { icon: <FileText size={16} />, label: 'گزارش' },
     { icon: <PieChart size={16} />, label: 'گزارش ربع‌وار' },
     { icon: <ScrollText size={16} />, label: 'لاگ' },
@@ -671,7 +673,7 @@ const App: React.FC = () => {
                   className={`btn btn-ghost btn-sm justify-start gap-3 ${tab === i ? 'btn-active text-primary font-bold' : ''}`}
                   onClick={() => { setTab(i); setMobileMenu(false); }}>
                   {t.icon} {t.label}
-                  {i === 8 && logs.length > 0 && <span className="badge badge-xs badge-primary mr-auto">{logs.length}</span>}
+                  {i === 9 && logs.length > 0 && <span className="badge badge-xs badge-primary mr-auto">{logs.length}</span>}
                 </button>
               ))}
             </div>
@@ -693,9 +695,10 @@ const App: React.FC = () => {
           {tab === 3 && <EmployeeTab employees={employees} onAdd={addEmployee} onDel={delEmployee} calc={calc} />}
           {tab === 4 && <DeductionTab deductions={deductions} onAdd={addDeduction} onDel={delDeduction} calc={calc} />}
           {tab === 5 && <TransactionsTab onLog={(a, d) => addLog('معاملات', a + ' — ' + d, '')} onFlash={(m) => { flash(m); loadDerivedIncomes(); }} />}
-          {tab === 6 && <ReportTab company={company} calc={calc} employees={employees} incomes={mergedIncomes} deductions={deductions} />}
-          {tab === 7 && <QuarterlyReportTab company={company} incomes={mergedIncomes} deductions={deductions} employees={employees} />}
-          {tab === 8 && <LogTab logs={logs} onClear={() => { setLogs([]); window.tasklet.sqlExec(`DELETE FROM tax_logs`); }} />}
+          {tab === 6 && <CustomsDeclarationsTab onLog={(a, d) => addLog('اظهارنامه', a, d)} onFlash={flash} />}
+          {tab === 7 && <ReportTab company={company} calc={calc} employees={employees} incomes={mergedIncomes} deductions={deductions} />}
+          {tab === 8 && <QuarterlyReportTab company={company} incomes={mergedIncomes} deductions={deductions} employees={employees} />}
+          {tab === 9 && <LogTab logs={logs} onClear={() => { setLogs([]); window.tasklet.sqlExec(`DELETE FROM tax_logs`); }} />}
         </div>
 
         {/* Footer */}
