@@ -286,6 +286,13 @@ export type Database = {
           declaration_date: string
           declaration_no: string
           declaration_type: string
+          etax_clearance_no: string | null
+          etax_cleared_at: string | null
+          etax_last_message: string | null
+          etax_ref_no: string | null
+          etax_status: string
+          etax_submitted_at: string | null
+          etax_synced_at: string | null
           exchange_rate: number
           goods_description: string
           hs_code: string | null
@@ -322,6 +329,13 @@ export type Database = {
           declaration_date?: string
           declaration_no: string
           declaration_type: string
+          etax_clearance_no?: string | null
+          etax_cleared_at?: string | null
+          etax_last_message?: string | null
+          etax_ref_no?: string | null
+          etax_status?: string
+          etax_submitted_at?: string | null
+          etax_synced_at?: string | null
           exchange_rate?: number
           goods_description: string
           hs_code?: string | null
@@ -358,6 +372,13 @@ export type Database = {
           declaration_date?: string
           declaration_no?: string
           declaration_type?: string
+          etax_clearance_no?: string | null
+          etax_cleared_at?: string | null
+          etax_last_message?: string | null
+          etax_ref_no?: string | null
+          etax_status?: string
+          etax_submitted_at?: string | null
+          etax_synced_at?: string | null
           exchange_rate?: number
           goods_description?: string
           hs_code?: string | null
@@ -439,6 +460,83 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      etax_events: {
+        Row: {
+          created_at: string
+          declaration_id: string
+          id: string
+          message: string | null
+          payload: Json | null
+          ref_no: string | null
+          source: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          declaration_id: string
+          id?: string
+          message?: string | null
+          payload?: Json | null
+          ref_no?: string | null
+          source?: string
+          status: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          declaration_id?: string
+          id?: string
+          message?: string | null
+          payload?: Json | null
+          ref_no?: string | null
+          source?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "etax_events_declaration_id_fkey"
+            columns: ["declaration_id"]
+            isOneToOne: false
+            referencedRelation: "customs_declarations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      etax_settings: {
+        Row: {
+          base_url: string | null
+          created_at: string
+          enabled: boolean
+          id: string
+          notes: string | null
+          taxpayer_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          base_url?: string | null
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          notes?: string | null
+          taxpayer_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          base_url?: string | null
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          notes?: string | null
+          taxpayer_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       exchange_rates: {
         Row: {
